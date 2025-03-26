@@ -1,0 +1,18 @@
+pkgVer <- function(pkg) {
+    if (!exists("meta") || is.null(meta)) meta <- packageDescription(pkg)
+    ver <- meta$Version
+    paste0('https://github.com/j-andrews7/halfBaked/', pkg, ' - R package version ', ver)
+}
+
+c(
+    bibentry(bibtype="manual",
+        title = "halfBaked",
+        author = personList(
+            as.person("j-andrews7")
+        ),
+        year = format(Sys.Date(), "%Y"),
+        url = "http://www.bioconductor.org/packages/halfBaked",
+        note = pkgVer('halfBaked'),
+        doi = '10.18129/B9.bioc.halfBaked'
+    )
+)
