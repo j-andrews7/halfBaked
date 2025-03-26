@@ -6,10 +6,6 @@ labels: ''
 assignees: ''
 ---
 
-Please ask questions about how to use `halfBaked` on the Bioconductor
-Support Site at <https://support.bioconductor.org> using the appropriate tag(s)
-including the one for this package.
-
 **Note**. Update the issue title to summarize the feature request.
 
 ## Is the feature request related to a problem?

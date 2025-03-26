@@ -1,12 +1,21 @@
 Package: halfBaked
-Title: What the Package Does (One Line, Title Case)
+Title: Half-baked Convenience Functions For Common `Omics Analyses
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+    person("Jared", "Andrews", , "jared.andrews07@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-0780-6248"))
 Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: MIT + file LICENSE
+Imports:
+    DESeq2,
+    edgeR,
+    ggplot2
+Remotes:
+    "j-andrews7/iBET"
+Suggests:
+    testthat,
+    apeglm,
+    airway
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2

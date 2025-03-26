@@ -6,10 +6,6 @@ labels: ''
 assignees: ''
 ---
 
-Please ask questions about how to use `halfBaked` on the
-[Bioconductor Support Site](https://support.bioconductor.org) using the
-appropriate tag(s) including the one for this package.
-
 **Note**. Update the issue title to concisely describe the bug.
 
 ## Describe the bug
@@ -49,8 +45,6 @@ Indicate whether `BiocManager::valid()` returns `TRUE`.
 
 - [ ] `BiocManager::valid()` is `TRUE`
 
-**Note**. To avoid potential issues with version mixing and reproducibility, do
-not install packages from `GitHub`.
 
 ## Additional Context
 
@@ -68,6 +62,6 @@ We find that [bioconda](https://bioconda.github.io/) installations can often be
 problematic due to the nature of the setup environment and potential for version
 mixing.
 
-The preferred method for installing Bioconductor software through `BiocManager`
+The preferred method for installing Bioconductor software is through `BiocManager`
 and we do not support issues related to `bioconda` installations at this time.
 
