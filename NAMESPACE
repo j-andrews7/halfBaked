@@ -2,3 +2,6 @@
 
 export(get_DESeq2_res)
 import(DESeq2)
+importFrom(SummarizedExperiment,rowData)
+importFrom(stats,as.formula)
+importFrom(stats,relevel)

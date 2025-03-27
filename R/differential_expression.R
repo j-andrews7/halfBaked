@@ -28,6 +28,8 @@
 #' @return A named list of DESeq2 result tables for the specified contrasts.
 #'
 #' @import DESeq2
+#' @importFrom stats as.formula relevel
+#' @importFrom SummarizedExperiment rowData
 #' @export
 #'
 #' @author Jared Andrews
@@ -37,7 +39,7 @@
 #' get_DESEQ2_res(dds, res.list, contrasts,
 #'     user.mat = TRUE, block = c("term1", "term2"),
 #'     design = my_design, alpha = 0.05, lfc.th = log2(2),
-#'     shrink.method = "apeglm", outdir = "./my_results", BPPARAM = MulticoreParam(2)
+#'     shrink.method = "apeglm", BPPARAM = MulticoreParam(2)
 #' )
 #' }
 #'
@@ -53,7 +55,6 @@ get_DESeq2_res <- function(
     shrink.method = "ashr",
     norm.ercc = FALSE,
     BPPARAM = NULL) {
-    dir.create(file.path(outdir), showWarnings = FALSE, recursive = TRUE)
 
     if (shrink.method == "apeglm") {
         .package_check("apeglm")

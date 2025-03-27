@@ -4,3 +4,5 @@
 ^LICENSE\.md$
 ^\.lintr$
 ^codecov\.yml$
+^\.github$
+^\.gitignore$

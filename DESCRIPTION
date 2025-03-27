@@ -4,12 +4,17 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Jared", "Andrews", , "jared.andrews07@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-0780-6248"))
-Description: What the package does (one paragraph).
+Description: halfBaked is a collection of convenience functions to aid in `omics analyses.
+    They span functions to automate and organize repetitive analyses (e.g. many pairwise RNA-seq comparisons) to viz.
+    More specifically, they’re designed to help create template Rmd notebooks to jumpstart exploratory data analysis and get the ball rolling for common data modalities.
+    Several templates are provided as vignettes.
 License: MIT + file LICENSE
 Imports:
     DESeq2,
     edgeR,
-    ggplot2
+    ggplot2,
+    stats,
+    SummarizedExperiment
 Remotes:
     j-andrews7/iBET
 Suggests:
@@ -17,5 +22,6 @@ Suggests:
     apeglm,
     airway
 Encoding: UTF-8
+VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2

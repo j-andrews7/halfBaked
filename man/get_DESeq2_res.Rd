@@ -63,7 +63,7 @@ parameters to be specified and a design matrix to be manually adjusted.
 get_DESEQ2_res(dds, res.list, contrasts,
     user.mat = TRUE, block = c("term1", "term2"),
     design = my_design, alpha = 0.05, lfc.th = log2(2),
-    shrink.method = "apeglm", outdir = "./my_results", BPPARAM = MulticoreParam(2)
+    shrink.method = "apeglm", BPPARAM = MulticoreParam(2)
 )
 }
 

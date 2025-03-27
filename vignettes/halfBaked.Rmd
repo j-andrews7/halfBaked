@@ -1,16 +1,16 @@
 ---
 title: "Introduction to halfBaked"
 author: 
-  - name: Your name
+  - name: Jared Andrews
     affiliation:
-    - Your institution
-    email: your.email@somewhere.com
+    - St. Jude Children's Research Hospital
+    email: jared.andrews07@gmail.com
 output: 
   BiocStyle::html_document:
     self_contained: yes
     toc: true
     toc_float: true
-    toc_depth: 2
+    toc_depth: 4
     code_folding: show
 date: "`r doc_date()`"
 package: "`r pkg_ver('halfBaked')`"
