@@ -11,7 +11,7 @@ Imports:
     edgeR,
     ggplot2
 Remotes:
-    "j-andrews7/iBET"
+    j-andrews7/iBET
 Suggests:
     testthat,
     apeglm,
