@@ -88,12 +88,12 @@ get_DESeq2_res <- function(
         } else if (!is.null(block)) {
             desgn <- as.formula(paste0("~", paste0(c(block, con[1]), collapse = "+")))
         } else {
-            desgn <- as.formula(paste0("~", con[1]), collapse = "")
+            desgn <- as.formula(paste0("~", con[1]))
         }
 
         message(paste0(
             "\nDesign for ", paste(con[1], con[2], "vs", con[3], sep = "_"),
-            " is ", paste0(as.character(desgn))
+            " is ", paste0(as.character(desgn), collapse = "")
         ))
 
         dds <- DESeqDataSet(dds, design = desgn)
