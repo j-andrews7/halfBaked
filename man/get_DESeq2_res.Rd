@@ -6,8 +6,8 @@
 \usage{
 get_DESeq2_res(
   dds,
-  res.list,
   contrasts,
+  res.list = list(),
   user.mat = FALSE,
   block = NULL,
   design = NULL,
@@ -15,16 +15,18 @@ get_DESeq2_res(
   lfc.th = c(log2(1.25), log2(1.5)),
   shrink.method = "ashr",
   norm.ercc = FALSE,
+  add.rowData = NULL,
   BPPARAM = NULL
 )
 }
 \arguments{
 \item{dds}{An object of class DESeqDataSet.}
 
-\item{res.list}{A list of DESeq2 result tables.
-Allows the function to be run multiple times if needed and append to the same list.}
-
 \item{contrasts}{A named list of contrasts.}
+
+\item{res.list}{A named list to hold DESeq2 result tables.
+Allows the function to be run multiple times if needed and append to the same list.
+Defaults to an empty list.}
 
 \item{user.mat}{A logical indicating whether a user-specified model matrix is provided.
 Defaults to FALSE.}
@@ -40,18 +42,22 @@ Defaults to NULL.}
 Defaults to 0.05.}
 
 \item{lfc.th}{A numeric vector of log2 fold-change thresholds.
-Defaults to c(log2(1.25), log2(1.5)).}
+Defaults to `c(log2(1.25), log2(1.5))``.}
 
 \item{shrink.method}{The method used for shrinkage estimation.
 Defaults to "ashr".}
 
 \item{norm.ercc}{A logical indicating whether to normalize to ERCC spike-ins.}
 
+\item{add.rowData}{A vector of column names from the rowData slot of the DESeqDataSet to be added to the results table.
+Defaults to NULL.}
+
 \item{BPPARAM}{The BiocParallelParam object specifying the parallel back-end to be used.
 Defaults to NULL.}
 }
 \value{
-A named list of DESeq2 result tables for the specified contrasts.
+A named list of \link[DESeq2:DESeqResults]{DESeq2::DESeqResults} objects for the specified contrasts.
+If \code{add.rowData} is supplied, these will be returned as \link[S4Vectors:DFrame]{S4Vectors::DFrame} objects instead.
 }
 \description{
 This function obtains a set of comparisons from a DESeq2 analysis, given a named list of contrasts.
@@ -59,13 +65,17 @@ It allows additional model
 parameters to be specified and a design matrix to be manually adjusted.
 }
 \examples{
-\dontrun{
-get_DESEQ2_res(dds, res.list, contrasts,
-    user.mat = TRUE, block = c("term1", "term2"),
-    design = my_design, alpha = 0.05, lfc.th = log2(2),
-    shrink.method = "apeglm", BPPARAM = MulticoreParam(2)
-)
-}
+library(DESeq2)
+dds_de <- makeExampleDESeqDataSet(n = 100, m = 12, betaSD = 2) # DE genes
+rownames(dds_de) <- paste0("gene", 1001:1100)
+dds <- makeExampleDESeqDataSet(n = 1000, m = 12) # Non-DE genes
+dds <- rbind(dds, dds_de)
+dds <- DESeq(dds)
+contrasts <- list("condition" = c("condition", "A", "B"))
+res <- get_DESeq2_res(dds, contrasts)
+
+names(res)
+head(res[[1]])
 
 }
 \author{

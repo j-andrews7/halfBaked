@@ -23,7 +23,8 @@ Suggests:
     airway,
     BiocStyle,
     rmarkdown,
-    RefManageR
+    RefManageR,
+    knitr
 Encoding: UTF-8
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)

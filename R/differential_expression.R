@@ -5,9 +5,10 @@
 #' parameters to be specified and a design matrix to be manually adjusted.
 #'
 #' @param dds An object of class DESeqDataSet.
-#' @param res.list A list of DESeq2 result tables.
-#'   Allows the function to be run multiple times if needed and append to the same list.
 #' @param contrasts A named list of contrasts.
+#' @param res.list A named list to hold DESeq2 result tables.
+#'   Allows the function to be run multiple times if needed and append to the same list.
+#'   Defaults to an empty list.
 #' @param user.mat A logical indicating whether a user-specified model matrix is provided.
 #'   Defaults to FALSE.
 #' @param block A vector of additional terms to be considered in the model, beyond the main effect.
@@ -18,14 +19,17 @@
 #' @param alpha The significance level for hypothesis testing.
 #'   Defaults to 0.05.
 #' @param lfc.th A numeric vector of log2 fold-change thresholds.
-#'   Defaults to c(log2(1.25), log2(1.5)).
+#'   Defaults to `c(log2(1.25), log2(1.5))``.
 #' @param shrink.method The method used for shrinkage estimation.
 #'   Defaults to "ashr".
 #' @param norm.ercc A logical indicating whether to normalize to ERCC spike-ins.
+#' @param add.rowData A vector of column names from the rowData slot of the DESeqDataSet to be added to the results table.
+#'   Defaults to NULL.
 #' @param BPPARAM The BiocParallelParam object specifying the parallel back-end to be used.
 #'   Defaults to NULL.
 #'
-#' @return A named list of DESeq2 result tables for the specified contrasts.
+#' @return A named list of \link[DESeq2:DESeqResults]{DESeq2::DESeqResults} objects for the specified contrasts.
+#'   If `add.rowData` is supplied, these will be returned as \link[S4Vectors:DFrame]{S4Vectors::DFrame} objects instead.
 #'
 #' @import DESeq2
 #' @importFrom stats as.formula relevel
@@ -35,18 +39,22 @@
 #' @author Jared Andrews
 #'
 #' @examples
-#' \dontrun{
-#' get_DESEQ2_res(dds, res.list, contrasts,
-#'     user.mat = TRUE, block = c("term1", "term2"),
-#'     design = my_design, alpha = 0.05, lfc.th = log2(2),
-#'     shrink.method = "apeglm", BPPARAM = MulticoreParam(2)
-#' )
-#' }
+#' library(DESeq2)
+#' dds_de <- makeExampleDESeqDataSet(n = 100, m = 12, betaSD = 2) # DE genes
+#' rownames(dds_de) <- paste0("gene", 1001:1100)
+#' dds <- makeExampleDESeqDataSet(n = 1000, m = 12) # Non-DE genes
+#' dds <- rbind(dds, dds_de)
+#' dds <- DESeq(dds)
+#' contrasts <- list("condition" = c("condition", "A", "B"))
+#' res <- get_DESeq2_res(dds, contrasts)
+#'
+#' names(res)
+#' head(res[[1]])
 #'
 get_DESeq2_res <- function(
     dds,
-    res.list,
     contrasts,
+    res.list = list(),
     user.mat = FALSE,
     block = NULL,
     design = NULL,
@@ -54,6 +62,7 @@ get_DESeq2_res <- function(
     lfc.th = c(log2(1.25), log2(1.5)),
     shrink.method = "ashr",
     norm.ercc = FALSE,
+    add.rowData = NULL,
     BPPARAM = NULL) {
 
     if (shrink.method == "apeglm") {
@@ -79,7 +88,7 @@ get_DESeq2_res <- function(
         } else if (!is.null(block)) {
             desgn <- as.formula(paste0("~", paste0(c(block, con[1]), collapse = "+")))
         } else {
-            desgn <- as.formula(paste0("~", con[1]))
+            desgn <- as.formula(paste0("~", con[1]), collapse = "")
         }
 
         message(paste0(
@@ -97,10 +106,14 @@ get_DESeq2_res <- function(
         }
 
         dds <- DESeq(dds, BPPARAM = BPPARAM)
-
         res1 <- results(dds, contrast = con, alpha = alpha)
-        res1$ENSEMBL <- rownames(res1)
-        res1$SYMBOL <- rowData(dds)$SYMBOL
+
+        if (!is.null(add.rowData) & all(add.rowData %in% colnames(rowData(dds)))) {
+            message("Adding rowData columns to results table.")
+            res1 <- cbind(res1, rowData(dds)[, add.rowData])
+        }
+
+        res.list[[rname]] <- res1
 
         if (!is.null(shrink.method)) {
             out.name <- paste0(rname, "-shLFC")
@@ -109,29 +122,24 @@ get_DESeq2_res <- function(
             if (shrink.method == "ashr") {
                 coef <- NULL
                 shrink <- lfcShrink(dds, contrast = con, type = shrink.method)
-                shrink$ENSEMBL <- rownames(shrink)
-                shrink$SYMBOL <- rowData(dds)$SYMBOL
-                rownames(shrink) <- shrink$SYMBOL
-                shrink <- as.data.frame(shrink)
-                res.list[[out.name]] <- shrink
             } else {
                 shrink <- lfcShrink(dds, res = res1, coef = coef, type = shrink.method)
-                shrink$ENSEMBL <- rownames(shrink)
-                shrink$SYMBOL <- rowData(dds)$SYMBOL
-                rownames(shrink) <- shrink$SYMBOL
-                shrink <- as.data.frame(shrink)
-                res.list[[out.name]] <- shrink
             }
-        }
 
-        rownames(res1) <- res1$SYMBOL
-        res1 <- as.data.frame(res1)
-        res.list[[rname]] <- res1
+            if (!is.null(add.rowData) & all(add.rowData %in% colnames(rowData(dds)))) {
+                message("Adding rowData columns to shrunken LFC results table.")
+                shrink <- cbind(shrink, rowData(dds)[, add.rowData])
+            }
+
+            res.list[[out.name]] <- shrink
+        }
 
         for (l in lfc.th) {
             res <- results(dds, contrast = con, alpha = alpha, lfcThreshold = l)
-            res$ENSEMBL <- rownames(res)
-            res$SYMBOL <- rowData(dds)$SYMBOL
+            if (!is.null(add.rowData) & all(add.rowData %in% colnames(rowData(dds)))) {
+                message("Adding rowData columns to results table.")
+                res <- cbind(res, rowData(dds)[, add.rowData])
+            }
 
             if (!is.null(shrink.method)) {
                 # ashr does not need coef, this is to ensure no error with user-supplied model matrix/list contrasts
@@ -139,25 +147,20 @@ get_DESeq2_res <- function(
                     coef <- NULL
                     out.name <- paste0(rname, "-shLFC", l)
                     shrink <- lfcShrink(dds, contrast = con, lfcThreshold = l, type = shrink.method)
-                    shrink$ENSEMBL <- rownames(shrink)
-                    shrink$SYMBOL <- rowData(dds)$SYMBOL
-                    rownames(shrink) <- shrink$SYMBOL
-                    shrink <- as.data.frame(shrink)
-                    res.list[[out.name]] <- shrink
                 } else {
                     out.name <- paste0(rname, "-shLFC", l)
                     shrink <- lfcShrink(dds, res = res, coef = coef, type = shrink.method)
-                    shrink$ENSEMBL <- rownames(shrink)
-                    shrink$SYMBOL <- rowData(dds)$SYMBOL
-                    rownames(shrink) <- shrink$SYMBOL
-                    shrink <- as.data.frame(shrink)
-                    res.list[[out.name]] <- shrink
                 }
+
+                if (!is.null(add.rowData) & all(add.rowData %in% colnames(rowData(dds)))) {
+                    message("Adding rowData columns to shrunken LFC results table.")
+                    shrink <- cbind(shrink, rowData(dds)[, add.rowData])
+                }
+
+                res.list[[out.name]] <- shrink
             }
 
-            rownames(res) <- res$SYMBOL
             out.name <- paste0(rname, "-LFC", l)
-            res <- as.data.frame(res)
             res.list[[out.name]] <- res
         }
     }
