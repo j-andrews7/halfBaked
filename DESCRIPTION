@@ -20,7 +20,10 @@ Remotes:
 Suggests:
     testthat,
     apeglm,
-    airway
+    airway,
+    BiocStyle,
+    rmarkdown,
+    RefManageR
 Encoding: UTF-8
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
