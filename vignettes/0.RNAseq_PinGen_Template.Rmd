@@ -8,8 +8,8 @@ author:
 output: 
   md_document:
     preserve_yaml: false
-date: "`r doc_date()`"
-package: "`r pkg_ver('halfBaked')`"
+date: "`r Sys.Date()`"
+package: "`r packageVersion('halfBaked')`"
 vignette: >
   %\VignetteIndexEntry{halfBaked Pin Generation Template}
   %\VignetteEngine{knitr::rmarkdown}
