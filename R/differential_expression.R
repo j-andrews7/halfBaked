@@ -23,7 +23,8 @@
 #' @param shrink.method The method used for shrinkage estimation.
 #'   Defaults to "ashr".
 #' @param norm.ercc A logical indicating whether to normalize to ERCC spike-ins.
-#' @param add.rowData A vector of column names from the rowData slot of the DESeqDataSet to be added to the results table.
+#' @param add.rowData A vector of column names from the rowData slot of the DESeqDataSet
+#'   to be added to the results table.
 #'   Defaults to NULL.
 #' @param BPPARAM The BiocParallelParam object specifying the parallel back-end to be used.
 #'   Defaults to NULL.
@@ -67,6 +68,10 @@ get_DESeq2_res <- function(
 
     if (shrink.method == "apeglm") {
         .package_check("apeglm")
+    }
+
+    if (shrink.method == "ashr") {
+        .package_check("ashr")
     }
 
     for (i in seq_along(contrasts)) {

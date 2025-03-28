@@ -8,11 +8,9 @@ c(
     bibentry(bibtype="manual",
         title = "halfBaked",
         author = personList(
-            as.person("j-andrews7")
+            as.person("Jared", "Andrews", role = "aut"),
         ),
         year = format(Sys.Date(), "%Y"),
-        url = "http://www.bioconductor.org/packages/halfBaked",
-        note = pkgVer('halfBaked'),
-        doi = '10.18129/B9.bioc.halfBaked'
+        note = pkgVer('halfBaked')
     )
 )
