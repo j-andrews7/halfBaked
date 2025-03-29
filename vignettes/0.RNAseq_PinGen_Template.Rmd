@@ -13,7 +13,6 @@ output:
     toc_depth: 4
     code_folding: show
 date: "`r Sys.Date()`"
-package: "`r packageVersion('halfBaked')`"
 vignette: >
   %\VignetteIndexEntry{halfBaked Pin Generation Template}
   %\VignetteEngine{knitr::rmarkdown}
