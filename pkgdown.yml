@@ -3,4 +3,8 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   halfBaked: halfBaked.html
-last_built: 2025-03-26T20:22Z
+  i.RNAseq_PinGen_Template: i.RNAseq_PinGen_Template.html
+last_built: 2025-03-29T20:26Z
+urls:
+  reference: https://j-andrews7.github.io/halfBaked/reference
+  article: https://j-andrews7.github.io/halfBaked/articles

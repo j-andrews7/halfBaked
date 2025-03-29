@@ -1,14 +1,17 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
-<url><loc>/404.html</loc></url>
-<url><loc>/articles/halfBaked.html</loc></url>
-<url><loc>/articles/index.html</loc></url>
-<url><loc>/authors.html</loc></url>
-<url><loc>/CODE_OF_CONDUCT.html</loc></url>
-<url><loc>/CONTRIBUTING.html</loc></url>
-<url><loc>/index.html</loc></url>
-<url><loc>/LICENSE-text.html</loc></url>
-<url><loc>/news/index.html</loc></url>
-<url><loc>/reference/index.html</loc></url>
-<url><loc>/SUPPORT.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/404.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/CODE_OF_CONDUCT.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/CONTRIBUTING.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/LICENSE-text.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/LICENSE.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/SUPPORT.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/articles/halfBaked.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/articles/i.RNAseq_PinGen_Template.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/articles/index.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/authors.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/index.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/news/index.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/reference/get_DESeq2_res.html</loc></url>
+<url><loc>https://j-andrews7.github.io/halfBaked/reference/index.html</loc></url>
 </urlset>
 
