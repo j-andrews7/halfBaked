@@ -49,7 +49,8 @@ Defaults to "ashr".}
 
 \item{norm.ercc}{A logical indicating whether to normalize to ERCC spike-ins.}
 
-\item{add.rowData}{A vector of column names from the rowData slot of the DESeqDataSet to be added to the results table.
+\item{add.rowData}{A vector of column names from the rowData slot of the DESeqDataSet
+to be added to the results table.
 Defaults to NULL.}
 
 \item{BPPARAM}{The BiocParallelParam object specifying the parallel back-end to be used.
