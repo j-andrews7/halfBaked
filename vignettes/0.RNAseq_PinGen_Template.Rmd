@@ -6,8 +6,12 @@ author:
     - St. Jude Children's Research Hospital
     email: jared.andrews07@gmail.com
 output: 
-  md_document:
-    preserve_yaml: false
+  BiocStyle::html_document:
+    self_contained: yes
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    code_folding: show
 date: "`r Sys.Date()`"
 package: "`r packageVersion('halfBaked')`"
 vignette: >
