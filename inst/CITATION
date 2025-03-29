@@ -8,7 +8,7 @@ c(
     bibentry(bibtype="manual",
         title = "halfBaked",
         author = personList(
-            as.person("Jared", "Andrews", role = "aut"),
+            person("Jared", "Andrews", role = "aut"),
         ),
         year = format(Sys.Date(), "%Y"),
         note = pkgVer('halfBaked')
