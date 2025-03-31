@@ -30,7 +30,7 @@ knitr::opts_chunk$set(error = FALSE, message = FALSE, warning = FALSE, eval = FA
 # Study - Experiment - RNA-seq Data - Pin Generation
 
 This notebook details how to create re-usable and easily shared [pins](https://pins.rstudio.com/articles/pins.html) for RNA-seq data.
-These pins will contain a `SummarizedExperiment` object containing gene counts, normalized counts, transformed counts, and TPMs along with sample metadata.
+These pins will contain a `SummarizedExperiment` object containing gene counts and TPMs along with sample metadata.
 In short, pretty much everything one would need to perform downstream analyses.
 
 For convenience, we'll also store experiment/dataset description, the code used to generate the pin (i.e. this notebook).
@@ -54,6 +54,13 @@ nextflow run nf-core/rnaseq -r 3.12.0 -profile singularity -c "$BAKER_REF"/nf_co
 
 This notebook uses YAML [params](https://bookdown.org/yihui/rmarkdown/parameterized-reports.html) in the header to specify the pin name and board to upload the pin to.
 This allows for easy re-use of the notebook for different datasets and boards in a lazy fashion.
+
+```yaml
+params:
+  board: "your_server_info"
+  pin_name: "PinGen_Name_RNAseq_SummarizedExperiment_mm10"
+  pin_description: "A SummarizedExperiment containing O4+ immunopanned oligodendrocyte precursor cells (OPCs) from cortices of P5 or P6 Eed KO or control mice."
+```
 
 Read more about the [pins](https://pins.rstudio.com/articles/pins.html) package if you don't know what a "board" is or how to use them.
 
