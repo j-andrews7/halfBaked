@@ -71,11 +71,13 @@ parameters to be specified and a design matrix to be manually adjusted.</p>
 
 
 <dl><dt id="arg-dds">dds<a class="anchor" aria-label="anchor" href="#arg-dds"></a></dt>
-<dd><p>An object of class DESeqDataSet.</p></dd>
+<dd><p>A <a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">SummarizedExperiment::SummarizedExperiment</a>  or <a href="https://rdrr.io/pkg/DESeq2/man/DESeqDataSet.html" class="external-link">DESeq2::DESeqDataSet</a> object.</p></dd>
 
 
 <dt id="arg-contrasts">contrasts<a class="anchor" aria-label="anchor" href="#arg-contrasts"></a></dt>
-<dd><p>A named list of contrasts.</p></dd>
+<dd><p>A named list of contrasts, e.g. <code>list("condition" = c("condition", "A", "B"))</code>.
+#'   The first element is the variable of interest, the second is the test, and the third is the reference level.
+#'   The name of  each element in the list will be used as a name in the results table.</p></dd>
 
 
 <dt id="arg-res-list">res.list<a class="anchor" aria-label="anchor" href="#arg-res-list"></a></dt>
@@ -112,6 +114,7 @@ Defaults to `c(log2(1.25), log2(1.5))“.</p></dd>
 
 <dt id="arg-shrink-method">shrink.method<a class="anchor" aria-label="anchor" href="#arg-shrink-method"></a></dt>
 <dd><p>The method used for shrinkage estimation.
+Must be one of "apeglm", "ashr", or NULL.
 Defaults to "ashr".</p></dd>
 
 
@@ -134,6 +137,14 @@ Defaults to NULL.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A named list of <a href="https://rdrr.io/pkg/DESeq2/man/DESeqResults.html" class="external-link">DESeq2::DESeqResults</a> objects for the specified contrasts.
 If <code>add.rowData</code> is supplied, these will be returned as <a href="https://rdrr.io/pkg/S4Vectors/man/DataFrame-class.html" class="external-link">S4Vectors::DFrame</a> objects instead.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>It is important to note that LFC shrinkage is independent of the typical MLE results table.
+That is, if <code>lfc.th</code> is provided, the results table p-values will reflect that testing threshold.
+If <code>shrink.method</code> is set to <code>ashr</code> with <code>lfc.th</code>, s-values will be returned in addition to the MLE p-values.</p>
+<p>It is possible to have shrunken FCs that are near 0 that still have a significant p-value.
+This is frustrating, as it means you end up having to do post-hoc filtering or filter with s-values, which are more difficult to interpret.</p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
