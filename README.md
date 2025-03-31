@@ -1,9 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# halfBaked <img src="man/figures/halfBaked_hex.png" align="right" alt="halfBaked" width="170" />
-
-------------------------------------------------------------------------
+# halfBaked <img src="man/figures/halfBaked_hex.png" align="right" alt="halfBaked" style="width: 180px;" />
 
 <!-- badges: start -->
 

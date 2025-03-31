@@ -12,9 +12,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# halfBaked <img src="man/figures/halfBaked_hex.png" align="right" alt="halfBaked" width="170" />
-
----
+# halfBaked <img src="man/figures/halfBaked_hex.png" align="right" alt="halfBaked" style="width: 180px;" />
 
 <!-- badges: start -->
 [![GitHub issues](https://img.shields.io/github/issues/j-andrews7/halfBaked)](https://github.com/j-andrews7/halfBaked/issues)
