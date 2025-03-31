@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<p align="center" width="100%">
-<img src="man/figures/halfBaked_hex.png" alt="halfBaked" height="330">
+<p align="center">
+<img src="man/figures/halfBaked_hex.png" alt="halfBaked" width="330">
 </p>
 
 ------------------------------------------------------------------------

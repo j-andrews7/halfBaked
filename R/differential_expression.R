@@ -4,8 +4,10 @@
 #' It allows additional model
 #' parameters to be specified and a design matrix to be manually adjusted.
 #'
-#' @param dds An object of class DESeqDataSet.
-#' @param contrasts A named list of contrasts.
+#' @param dds A [SummarizedExperiment::SummarizedExperiment]  or [DESeq2::DESeqDataSet] object.
+#' @param contrasts A named list of contrasts, e.g. `list("condition" = c("condition", "A", "B"))`.
+#' #'   The first element is the variable of interest, the second is the test, and the third is the reference level.
+#' #'   The name of  each element in the list will be used as a name in the results table.
 #' @param res.list A named list to hold DESeq2 result tables.
 #'   Allows the function to be run multiple times if needed and append to the same list.
 #'   Defaults to an empty list.
@@ -21,6 +23,7 @@
 #' @param lfc.th A numeric vector of log2 fold-change thresholds.
 #'   Defaults to `c(log2(1.25), log2(1.5))``.
 #' @param shrink.method The method used for shrinkage estimation.
+#'   Must be one of "apeglm", "ashr", or NULL.
 #'   Defaults to "ashr".
 #' @param norm.ercc A logical indicating whether to normalize to ERCC spike-ins.
 #' @param add.rowData A vector of column names from the rowData slot of the DESeqDataSet
@@ -31,6 +34,14 @@
 #'
 #' @return A named list of \link[DESeq2:DESeqResults]{DESeq2::DESeqResults} objects for the specified contrasts.
 #'   If `add.rowData` is supplied, these will be returned as \link[S4Vectors:DFrame]{S4Vectors::DFrame} objects instead.
+#'
+#' @details It is important to note that LFC shrinkage is independent of the typical MLE results table.
+#'   That is, if `lfc.th` is provided, the results table p-values will reflect that testing threshold.
+#'   If `shrink.method` is set to `ashr` with `lfc.th`, s-values will be returned in addition to the MLE p-values.
+#'
+#'   It is possible to have shrunken FCs that are near 0 that still have a significant p-value.
+#'   This is frustrating, as it means you end up having to do post-hoc filtering or filter with s-values, which are more difficult to interpret.
+#'
 #'
 #' @import DESeq2
 #' @importFrom stats as.formula relevel
@@ -65,7 +76,6 @@ get_DESeq2_res <- function(
     norm.ercc = FALSE,
     add.rowData = NULL,
     BPPARAM = NULL) {
-
     if (shrink.method == "apeglm") {
         .package_check("apeglm")
     }
@@ -125,8 +135,7 @@ get_DESeq2_res <- function(
 
             # ashr does not need coef, this is to ensure no error with user-supplied model matrix/list contrasts
             if (shrink.method == "ashr") {
-                coef <- NULL
-                shrink <- lfcShrink(dds, contrast = con, type = shrink.method)
+                shrink <- lfcShrink(dds, res = res1, contrast = con, type = shrink.method)
             } else {
                 shrink <- lfcShrink(dds, res = res1, coef = coef, type = shrink.method)
             }
@@ -151,7 +160,7 @@ get_DESeq2_res <- function(
                 if (shrink.method == "ashr") {
                     coef <- NULL
                     out.name <- paste0(rname, "-shLFC", l)
-                    shrink <- lfcShrink(dds, contrast = con, lfcThreshold = l, type = shrink.method)
+                    shrink <- lfcShrink(dds, res = res, contrast = con, lfcThreshold = l, type = shrink.method)
                 } else {
                     out.name <- paste0(rname, "-shLFC", l)
                     shrink <- lfcShrink(dds, res = res, coef = coef, type = shrink.method)
