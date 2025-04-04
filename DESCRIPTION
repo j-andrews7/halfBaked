@@ -14,7 +14,10 @@ Imports:
     edgeR,
     ggplot2,
     stats,
-    SummarizedExperiment
+    SummarizedExperiment,
+    clusterProfiler,
+    enrichplot,
+    ReactomePA
 Remotes:
     j-andrews7/iBET
 Suggests:

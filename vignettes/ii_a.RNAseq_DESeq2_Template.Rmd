@@ -104,7 +104,7 @@ assay(dds, "vst") <- as.matrix(assay(vsd))
 lognorm <- normTransform(dds)
 assay(dds, "lognorm") <- as.matrix(assay(lognorm))
 
-# Create spike-in normalized variant.
+# Create spike-in normalized variant, if spike-ins are included.
 if (params$ercc) {
     spikes <- rownames(dds)[grep("^ERCC-", rownames(dds))]
 
@@ -131,10 +131,9 @@ res <- list()
 
 # Whatever can be used as name of contrast vectors, though typically they should be a group vs another group.
 # I use -b_OTHERVARIABLES in the name to indicate additional variables that were accounted for in the model.
-# That is, fed to the `block` parameter of `get_DESEQ2_res`.
+# That is, fed to the `block` parameter of `get_DESEQ2_res`, if provided.
 contrasts <- list(
-    "JUN.v.SCR-b_Line" = c("Broad_Group", "JUN", "SCR"),
-    "SOX2.v.SCR-b_Line" = c("Broad_Group", "SOX2", "SCR")
+    "Eed_cKO.v.Control" = c("Group", "Eed_cKO", "Control")
 )
 
 res <- get_DESEQ2_res(dds, res.list = res, contrasts = contrasts)
@@ -185,7 +184,10 @@ if (params$ercc) {
 
 # Enrichment/Over-representation Analyses
 
+Hypergeometric enrichment analyses are pretty standard.
 
+We use the `run_enrichment()` function to make these more convenient to run.
+This function largely uses the `clusterProfiler` package and spits out a boatload of figures and tables in the output directory.
 
 ```{r}
 # Set species and database stuff for enrichments
