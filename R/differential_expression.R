@@ -6,8 +6,8 @@
 #'
 #' @param dds A [SummarizedExperiment::SummarizedExperiment]  or [DESeq2::DESeqDataSet] object.
 #' @param contrasts A named list of contrasts, e.g. `list("condition" = c("condition", "A", "B"))`.
-#' #'   The first element is the variable of interest, the second is the test, and the third is the reference level.
-#' #'   The name of  each element in the list will be used as a name in the results table.
+#'   The first element is the variable of interest, the second is the test, and the third is the reference level.
+#'   The name of  each element in the list will be used as a name in the results table.
 #' @param res.list A named list to hold DESeq2 result tables.
 #'   Allows the function to be run multiple times if needed and append to the same list.
 #'   Defaults to an empty list.
@@ -40,7 +40,8 @@
 #'   If `shrink.method` is set to `ashr` with `lfc.th`, s-values will be returned in addition to the MLE p-values.
 #'
 #'   It is possible to have shrunken FCs that are near 0 that still have a significant p-value.
-#'   This is frustrating, as it means you end up having to do post-hoc filtering or filter with s-values, which are more difficult to interpret.
+#'   This is frustrating, as it means you end up having to do post-hoc filtering on LFC
+#'   or filter with s-values, which are more difficult to interpret than the adjusted p-values.
 #'
 #'
 #' @import DESeq2

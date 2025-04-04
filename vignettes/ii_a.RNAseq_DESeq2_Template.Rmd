@@ -1,0 +1,942 @@
+---
+title: "halfBaked Template - RNA-seq - DESeq2 Differential Expression"
+author: 
+  - name: Jared Andrews
+    affiliation:
+    - St. Jude Children's Research Hospital
+    email: jared.andrews07@gmail.com
+output: 
+  BiocStyle::html_document:
+    self_contained: yes
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    code_folding: show
+date: "`r doc_date()`"
+package: "`r pkg_ver('halfBaked')`"
+vignette: >
+  %\VignetteIndexEntry{halfBaked RNA-seq Template}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}  
+params:
+  ercc: FALSE
+  species: mouse
+  pin_name: "GSE135880_SummarizedExperiment_mm10"
+  board: "https://j-andrews7.github.io/halfBaked/pins-board/"
+---
+
+```{css, echo=FALSE}
+# This is to change width of the content so that half the page isn't empty as it is by default.
+body {
+  max-width: 1850px !important;
+}
+div.main-container {
+  max-width: 1850px !important;
+  width: 1850px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+.toc-content {
+  padding-right: 0px;
+  padding-left: 0px;
+  margin-left: 300px;
+  max-width: 1550px !important;
+  width: 1550px !important;
+}
+```
+
+```{r, include=FALSE}
+library(BiocStyle)
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center", message = FALSE, warning = FALSE)
+```
+
+# Introduction
+
+This is an example template for running a typical differential expression analysis using 
+[DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html) via [halfBaked](https://j-andrews7.github.io/halfBaked/).
+It is meant to be a starting point for your own analysis and is not a comprehensive guide to all the options available in DESeq2 or halfBaked.
+
+# Load the Pin (or SummarizedExperiment)
+
+This vignette assumes that you have already created a pin with the `halfBaked` package (see `vignette("halfBaked Pin Generation Template")`) that you want to load 
+or that you have a `SummarizedExperiment` object that you want to use.
+
+If you already have a SummarizedExperiment object, you can skip this step and load it directly.
+
+```{r, message=FALSE}
+library(halfBaked)
+library(pins)
+library(openxlsx)
+
+set.seed(7)
+
+board <- board_url(params$board)
+se <- pin_read(board, params$pin_name)
+```
+
+# Dataset Description
+
+If stored in the SummarizedExperiment, we can show the experiment description directly.
+
+```{r, results='asis'}
+cat(metadata(se)$description)
+```
+
+# Run Differential Expression via DESeq2
+
+See `get_DESEQ2_res()` for more details on the parameters.
+
+```{r}
+# Generate DESeqDataSet & run DESeq2.
+# Design is just being set to no design here (~ 1), since we'll set it later.
+dds <- DESeqDataSet(se, design = ~1)
+
+# Remove low counts genes, adjust as necessary for smallest group.
+smallestGroupSize <- 2
+keep <- rowSums(counts(dds) >= 10) >= smallestGroupSize
+dds <- dds[keep, ]
+
+dds <- DESeq(dds)
+
+# Get normalized counts and variance stabilized counts (preferred for viz).
+vsd <- vst(dds)
+assay(dds, "vst") <- as.matrix(assay(vsd))
+lognorm <- normTransform(dds)
+assay(dds, "lognorm") <- as.matrix(assay(lognorm))
+
+# Create spike-in normalized variant.
+if (params$ercc) {
+    spikes <- rownames(dds)[grep("^ERCC-", rownames(dds))]
+
+    # Check fraction of reads in spikes for each sample.
+    spikeFraction <- counts(dds, normalized = FALSE)[spikes, ]
+    spikeFraction <- colSums(spikeFraction)
+    spikeFraction <- spikeFraction / colSums(counts(dds, normalized = FALSE))
+
+    # Save fractions
+    write.table(spikeFraction, "spike_fraction.txt", sep = "\t", col.names = FALSE, quote = FALSE)
+
+    dds.spike <- estimateSizeFactors(dds, controlGenes = rownames(dds) %in% spikes)
+    dds.spike <- DESeq(dds.spike)
+
+    vsd <- vst(dds.spike)
+    assay(dds.spike, "vst") <- as.matrix(assay(vsd))
+    lognorm <- normTransform(dds.spike)
+    assay(dds.spike, "lognorm") <- as.matrix(assay(lognorm))
+}
+
+
+
+res <- list()
+
+# Whatever can be used as name of contrast vectors, though typically they should be a group vs another group.
+# I use -b_OTHERVARIABLES in the name to indicate additional variables that were accounted for in the model.
+# That is, fed to the `block` parameter of `get_DESEQ2_res`.
+contrasts <- list(
+    "JUN.v.SCR-b_Line" = c("Broad_Group", "JUN", "SCR"),
+    "SOX2.v.SCR-b_Line" = c("Broad_Group", "SOX2", "SCR")
+)
+
+res <- get_DESEQ2_res(dds, res.list = res, contrasts = contrasts)
+
+# This just shortens names so that writing to excel won't scream.
+names(res) <- gsub("0.584962500721156", "0.58", names(res))
+names(res) <- gsub("0.321928094887362", "0.32", names(res))
+
+dds.meta <- metadata(dds)
+dds.meta$DE.Results <- res
+metadata(dds) <- dds.meta
+
+# Save
+write.xlsx(res, file = "./de/All.Comparisons.DEGs.xlsx", overwrite = TRUE)
+saveRDS(dds, "dds.RDS")
+
+# Same for spikein if present
+if (params$ercc) {
+    res.spike <- list()
+
+    # Note norm.ercc parameter.
+    res.spike <- get_DESEQ2_res(dds.spike,
+        res.list = res.spike, contrasts = contrasts, 
+        norm.ercc = TRUE
+    )
+
+    names(res.spike) <- gsub("0.584962500721156", "0.58", names(res.spike))
+    names(res.spike) <- gsub("0.321928094887362", "0.32", names(res.spike))
+
+    dds.spike.meta <- metadata(dds.spike)
+    dds.spike.meta$DE.Results <- res.spike
+    metadata(dds.spike) <- dds.spike.meta
+
+    write.xlsx(res.spike, file = "./de/ERCC_spike/All.Comparisons.DEGs.ERCC_spikein.xlsx", overwrite = TRUE)
+    saveRDS(dds.spike, "dds.ERCC_spikein.RDS")
+}
+```
+
+## Check Spike-In Fraction
+
+As a proportion of total counts in each sample. Can just delete this section if ERCC not in samples.
+
+```{r}
+if (params$ercc) {
+    spikeFraction
+}
+```
+
+# Enrichment/Over-representation Analyses
+
+
+
+```{r}
+# Set species and database stuff for enrichments
+if (params$species %in% c("human", "mouse")) {
+    if (params$species == "human") {
+        orgdb <- "org.Hs.eg.db"
+        kegg.org <- "hsa"
+        react.org <- "human"
+        msig.species <- "Homo sapiens"
+    } else {
+        orgdb <- "org.Mm.eg.db"
+        kegg.org <- "mmu"
+        react.org <- "mouse"
+        msig.species <- "Mus musculus"
+    }
+} else {
+    stop("species parameter must be 'human' or 'mouse'")
+}
+
+run_enrichment(res, OrgDb = orgdb)
+
+if (params$ercc) {
+    run_enrichGO(res.spike, OrgDb = orgdb, outdir = "./enrichments/ERCC_spike")
+}
+```
+
+## GSEA
+
+### Load & Save GeneSets
+
+```{r, eval = FALSE}
+# Retrieve MSigDB Hallmark gene sets and convert to a named list.
+msig <- msigdbr(species = msig.species)
+msig.ls <- msig %>% split(x = .$gene_symbol, f = .$gs_name)
+
+board <- board_connect(server = "svlpbakerlab01.stjude.org")
+gs <- pin_read(board, gs.pin)
+
+# Custom gene sets.
+glioma.pub <- gs$GliomaRelated_published
+glioma.pub.ls <- lapply(glioma.pub, FUN = function(x) x$genes)
+
+glioma.upub <- gs$GliomaRelated_unpublished
+glioma.upub.ls <- lapply(glioma.upub, FUN = function(x) x$genes)
+
+celltypes <- gs$CellTypes
+celltypes.ls <- lapply(celltypes, FUN = function(x) x$genes)
+
+gs.out <- c(msig.ls, glioma.pub.ls, glioma.upub.ls, celltypes.ls)
+
+# To package with this document, these must be saved in/below the directory in which the document is saved.
+dir.create("./genesets", showWarnings = FALSE, recursive = TRUE)
+saveRDS(gs.out, file = "./genesets/all_genesets.RDS")
+```
+
+### Convenience Function
+
+To actually run the GSEA with on multiple comparisons easily.
+
+```{r, eval = FALSE}
+#' Run Gene Set Enrichment Analysis (GSEA) with MSigDb signatures
+#'
+#' This function performs GSEA on a named list of ranked genes, and restricts the analysis to specific MSigDb
+#' collections of gene signatures using the 'cats' and 'subcats' arguments.
+#'
+#' @param msigs A dataframe containing all MSigDb gene signatures.
+#' @param ranked.genes A named list of ranked genes.
+#' @param outdir The output directory for results.
+#' @param outprefix The prefix for output files.
+#' @param xlsx A list to store results that will be later written to an Excel file. Defaults to NULL.
+#' @param cats A character vector specifying the main categories of gene sets to consider from MSigDb. Defaults to "H".
+#' @param subcats A character vector specifying the subcategories of gene sets to consider from MSigDb. Must match in length with 'cats'. Defaults to NULL.
+#' @param ... Additional arguments to pass to the 'fgsea' function.
+#'
+#' @return A list of GSEA results if 'xlsx' is not NULL, otherwise, results are saved as files in the specified output directory.
+#'
+#' @examples
+#' \dontrun{
+#' runGSEA(
+#'     msigs = msigdb, ranked.genes = my_genes, outdir = "./results", outprefix = "experiment1",
+#'     xlsx = list(), cats = c("H", "C3"), subcats = c("BP", "MIR")
+#' )
+#' }
+#'
+#' @note Ensure that 'cats' and 'subcats' vectors have equal lengths.
+#' @note The function creates various output files including detailed GSEA results, enrichment plots, and tables of top enriched pathways.
+#'
+#' @author Jared Andrews
+runGSEA <- function(msigs, ranked.genes, outdir, outprefix,
+                    xlsx = NULL, cats = "H", subcats = NULL, ...) {
+    if (length(cats) != length(subcats)) {
+        stop("cats and subcats must be of equal length")
+    }
+
+    collapsedPathways <- NULL
+
+    for (i in seq_along(cats)) {
+        # Parse out the category and subcategory, set output prefixes.
+        subcat <- NULL
+        categ <- cats[i]
+        if (!is.null(subcats) & subcats[i] != "") {
+            subcat <- subcats[i]
+            sigs <- msigs %>% dplyr::filter(gs_cat == categ & gs_subcat == subcat)
+            outpre <- paste0(outdir, "/", outprefix, ".", categ, ".", subcat)
+            outpre <- gsub(":", ".", outpre)
+            xlname <- paste0(outprefix, ".", categ, ".", subcat)
+            xlname <- gsub(":", ".", xlname)
+        } else {
+            sigs <- msigs %>% dplyr::filter(gs_cat == categ)
+            outpre <- paste0(outdir, "/", outprefix, ".", categ)
+            xlname <- paste0(outprefix, ".", categ)
+        }
+
+        # Convert the msigdbr dataframe to named lists containing the gene sets in the set category.
+        sigs <- sigs %>% split(x = .$gene_symbol, f = .$gs_name)
+        fgseaRes <- fgsea(
+            pathways = sigs,
+            stats = ranked.genes,
+            eps = 1e-100,
+            minSize = 15,
+            maxSize = 500,
+            ...
+        )
+        fgseaRes <- fgseaRes[order(padj), ]
+
+        # Save full results.
+        fwrite(fgseaRes, file = paste0(outpre, ".fgseaRes.txt"), sep = "\t", sep2 = c("", " ", ""))
+
+        # Figures
+        fsig <- fgseaRes$pathway[fgseaRes$padj < 0.05]
+        plots <- list()
+        for (f in seq_along(fsig)) {
+            pathw <- fsig[f]
+            if (!is.na(pathw)) {
+                # Adjust corner that stats will be plotted in based on swoop shape.
+                if (!is.na(fgseaRes$NES[f]) & fgseaRes$NES[f] < 0) {
+                    xinf <- -Inf
+                    yinf <- -Inf
+                } else {
+                    xinf <- Inf
+                    yinf <- Inf
+                }
+
+                # For those really long titles.
+                tt <- pathw
+                if (nchar(tt) > 40) {
+                    stri_sub(tt, 48, 47) <- "\n"
+                }
+
+                p <- plotEnrichment(
+                    sigs[[pathw]],
+                    ranked.genes
+                ) + labs(title = tt) +
+                    theme(plot.title = element_text(size = 6))
+
+                # Add stats to plot.
+                p <- p + annotate("text", xinf, yinf,
+                    label = paste0(
+                        "p.val = ",
+                        formatC(fgseaRes$pval[fgseaRes$pathway == pathw],
+                            format = "e", digits = 2
+                        ),
+                        "\np.adj = ",
+                        formatC(fgseaRes$padj[fgseaRes$pathway == pathw],
+                            format = "e", digits = 2
+                        ),
+                        "\nNES = ",
+                        round(fgseaRes$NES[fgseaRes$pathway == pathw], digits = 2)
+                    ),
+                    vjust = "inward", hjust = "inward", size = 3
+                )
+                plots[[f]] <- p
+            }
+        }
+
+        if (length(plots) > 0) {
+            pdf(paste0(outpre, ".Pathways.padj0.05.Swoops.pdf"), height = 10, width = 20)
+            # Calculate how many pages to print assuming max 24 plots per page.
+            pages <- ceiling(length(plots) / 24)
+            # Print each page.
+            for (i in 1:pages) {
+                end <- i * 24
+                start <- end - 23
+                if (end > length(plots)) {
+                    end <- length(plots)
+                }
+                grid.arrange(grobs = plots[start:end], nrow = 4, ncol = 6)
+            }
+            dev.off()
+        }
+
+        # Plot top 10 pos/neg enriched pathways in table-ish format plot.
+        if (length(fsig) > 0) {
+            pdf(paste0(outpre, ".Top10Pathways.padj0.05.pdf"), width = 12)
+            topPathwaysUp <- fgseaRes[ES > 0 & padj < 0.05][head(order(pval), n = 10), pathway]
+            topPathwaysDown <- fgseaRes[ES < 0 & padj < 0.05][head(order(pval), n = 10), pathway]
+            topPathways <- c(topPathwaysUp, rev(topPathwaysDown))
+            plotGseaTable(sigs[topPathways], ranked.genes, fgseaRes,
+                gseaParam = 0.5
+            )
+            dev.off()
+        }
+
+        # Add results to named list.
+        if (!is.null(xlsx)) {
+            xlsx[[xlname]] <- fgseaRes
+        }
+    }
+    if (!is.null(xlsx)) {
+        return(xlsx)
+    }
+}
+
+#' Run Gene Set Enrichment Analysis (GSEA) with custom signatures
+#'
+#' This function performs GSEA on a named list of ranked genes.
+#'
+#' @param sigs A named list of gene signatures.
+#' @param ranked.genes A named list of ranked genes.
+#' @param outdir The output directory for results.
+#' @param outprefix The prefix for output files.
+#' @param xlsx A list to store results that will be later written to an Excel file. Defaults to NULL.
+#' @param ... Additional arguments to pass to the 'fgsea' function.
+#'
+#' @return A list of GSEA results if 'xlsx' is not NULL, otherwise, results are saved as files in the specified output directory.
+#'
+#' @examples
+#' \dontrun{
+#' runCustomGSEA(
+#'     msigs = msigdb, ranked.genes = my_genes, outdir = "./results", outprefix = "experiment1",
+#'     xlsx = list()
+#' )
+#' }
+#'
+#' @note The function creates various output files including detailed GSEA results, enrichment plots, and tables of top enriched pathways.
+#'
+#' @author Jared Andrews
+runCustomGSEA <- function(sigs, ranked.genes, outdir,
+                          outprefix, xlsx = NULL, ...) {
+    outpre <- paste0(outdir, "/", outprefix, ".c")
+    xlname <- paste0(outprefix, ".c")
+
+    fgseaRes <- fgsea(
+        pathways = sigs,
+        stats = ranked.genes,
+        eps = 1e-100,
+        minSize = 15,
+        maxSize = 3000,
+        ...
+    )
+    fgseaRes <- fgseaRes[order(padj), ]
+
+    # Save full results.
+    fwrite(fgseaRes,
+        file = paste0(outpre, ".fgseaRes.txt"),
+        sep = "\t", sep2 = c("", " ", "")
+    )
+
+    # Figures
+    fsig <- fgseaRes$pathway
+    plots <- list()
+    for (f in seq_along(fsig)) {
+        pathw <- fsig[f]
+        if (!is.na(pathw)) {
+            # reposition annotation depending on curve shape.
+            if (!is.na(fgseaRes$NES[f]) & fgseaRes$NES[f] < 0) {
+                xinf <- -Inf
+                yinf <- -Inf
+            } else {
+                xinf <- Inf
+                yinf <- Inf
+            }
+
+            # For those really long titles.
+            tt <- pathw
+            if (nchar(tt) > 40) {
+                stri_sub(tt, 48, 47) <- "\n"
+            }
+
+            p <- plotEnrichment(
+                sigs[[pathw]],
+                ranked.genes
+            ) + labs(title = tt) +
+                theme(plot.title = element_text(size = 7))
+
+            # Add stats to plot.
+            p <- p + annotate("text", xinf, yinf,
+                label = paste0(
+                    "p.val = ",
+                    formatC(fgseaRes$pval[f], format = "e", digits = 2),
+                    "\np.adj = ",
+                    formatC(fgseaRes$padj[f], format = "e", digits = 2),
+                    "\nNES = ",
+                    round(fgseaRes$NES[f], digits = 2)
+                ),
+                vjust = "inward", hjust = "inward", size = 3
+            )
+
+            plots[[f]] <- p
+        }
+    }
+
+    pdf(paste0(outpre, ".Pathways.padj0.05.Swoops.pdf"), height = 10, width = 20)
+    # Calculate how many pages to print assuming max 24 plots per page.
+    pages <- ceiling(length(plots) / 24)
+    # Print each page.
+    for (i in 1:pages) {
+        end <- i * 24
+        start <- end - 23
+        if (end > length(plots)) {
+            end <- length(plots)
+        }
+        grid.arrange(grobs = plots[start:end], nrow = 4, ncol = 6)
+    }
+    dev.off()
+
+    pdf(paste0(outpre, ".Top10Pathways.padj0.05.pdf"), width = 12)
+    topPathwaysUp <- fgseaRes[ES > 0 & padj < 0.05][head(order(pval), n = 10), pathway]
+    topPathwaysDown <- fgseaRes[ES < 0 & padj < 0.05][head(order(pval), n = 10), pathway]
+    topPathways <- unique(c(topPathwaysUp, rev(topPathwaysDown)))
+    plotGseaTable(sigs[topPathways], ranked.genes, fgseaRes,
+        gseaParam = 0.5
+    )
+    dev.off()
+
+    if (!is.null(xlsx)) {
+        xlsx[[xlname]] <- fgseaRes
+    }
+
+    if (!is.null(xlsx)) {
+        return(xlsx)
+    }
+}
+```
+
+
+### Create Ranked Gene Lists
+
+GSEA requires a ranked list of genes, so we will use the test statistic, as it is signed and correlates with both significance and effect size.
+
+```{r, eval = FALSE}
+# Add as many comparisons as wanted here. Should match values in `names(dds.meta)$DE.Results[[d]]`.
+dges <- c("SOX2.v.SCR-bl_Line")
+
+ranked_lists <- list()
+
+for (d in dges) {
+    out.res <- dds.meta$DE.Results[[d]]
+    gsea.df <- out.res[!(is.na(out.res$padj)), ]
+
+    gsea.df.gsea <- gsea.df$stat
+    names(gsea.df.gsea) <- make.names(gsea.df$SYMBOL, unique = TRUE)
+
+    ranked_lists[[d]] <- gsea.df.gsea
+}
+
+if (params$ercc) {
+    ranked_lists.spike <- list()
+
+    for (d in dges) {
+        out.res <- dds.spike.meta$DE.Results[[d]]
+        gsea.df <- out.res[!(is.na(out.res$padj)), ]
+
+        gsea.df.gsea <- gsea.df$stat
+        names(gsea.df.gsea) <- make.names(gsea.df$SYMBOL, unique = TRUE)
+
+        ranked_lists.spike[[d]] <- gsea.df.gsea
+    }
+}
+```
+
+And run.
+
+```{r, message=TRUE, eval=FALSE, warning=TRUE, error=TRUE}
+xl.lists <- list()
+xl.lists.gli.pub <- list()
+xl.lists.gli.upub <- list()
+xl.lists.celltypes <- list()
+
+if (params$ercc) {
+    xl.lists.spike <- list()
+    xl.lists.gli.pub.spike <- list()
+    xl.lists.gli.upub.spike <- list()
+    xl.lists.celltypes.spike <- list()
+}
+
+for (i in seq_along(ranked_lists)) {
+    ranked.genes <- ranked_lists[[i]]
+    ranked.name <- names(ranked_lists)[i]
+    message(paste0("Running pre-ranked GSEA for: ", ranked.name))
+
+    out <- paste0("./GSEA/", ranked.name)
+    dir.create(out, showWarnings = FALSE, recursive = TRUE)
+
+    # Note that `cats` and `subcats` can be used to limit to specific gene signature collections of interest.
+    xl.lists <- runGSEA(msig, ranked.genes,
+        outdir = out, outprefix = ranked.name,
+        xlsx = xl.lists, cats = c("H", "C2", "C2", "C2", "C3", "C5", "C5", "C5", "C5", "C8"),
+        subcats = c("", "CGP", "CP:KEGG", "CP:REACTOME", "TFT:GTRD", "GO:MF", "GO:BP", "GO:CC", "HPO", ""),
+        BPPARAM = bpparam()
+    )
+
+    xl.lists.gli.pub <- runCustomGSEA(glioma.pub.ls, ranked.genes,
+        outdir = out,
+        outprefix = paste0(ranked.name, ".glioma_pub"), xlsx = xl.lists.gli.pub,
+        nPermSimple = 10000, BPPARAM = bpparam()
+    )
+
+    xl.lists.gli.upub <- runCustomGSEA(glioma.upub.ls, ranked.genes,
+        outdir = out,
+        outprefix = paste0(ranked.name, ".glioma_upub"), xlsx = xl.lists.gli.upub,
+        nPermSimple = 10000, BPPARAM = bpparam()
+    )
+
+    xl.lists.celltypes <- runCustomGSEA(celltypes.ls, ranked.genes,
+        outdir =
+            out, outprefix = paste0(ranked.name, ".ctype"), xlsx = xl.lists.celltypes,
+        BPPARAM = bpparam()
+    )
+
+    if (params$ercc) {
+        out <- paste0("./GSEA/ERCC_spike/", ranked.name)
+        dir.create(out, showWarnings = FALSE, recursive = TRUE)
+
+        # Note that `cats` and `subcats` can be used to limit to specific gene signature collections of interest.
+        xl.lists.spike <- runGSEA(msig, ranked.genes,
+            outdir = out, outprefix = ranked.name,
+            xlsx = xl.lists.spike,
+            cats = c("H", "C2", "C2", "C2", "C3", "C5", "C5", "C5", "C5", "C8"),
+            subcats = c("", "CGP", "CP:KEGG", "CP:REACTOME", "TFT:GTRD", "GO:MF", "GO:BP", "GO:CC", "HPO", ""),
+            BPPARAM = bpparam()
+        )
+
+        xl.lists.gli.pub.spike <- runCustomGSEA(glioma.pub.ls, ranked.genes,
+            outdir = out,
+            outprefix = paste0(ranked.name, ".glioma_pub"),
+            xlsx = xl.lists.gli.pub.spike,
+            nPermSimple = 10000, BPPARAM = bpparam()
+        )
+
+        xl.lists.gli.upub.spike <- runCustomGSEA(glioma.upub.ls, ranked.genes,
+            outdir = out,
+            outprefix = paste0(ranked.name, ".glioma_upub"),
+            xlsx = xl.lists.gli.upub.spike,
+            nPermSimple = 10000, BPPARAM = bpparam()
+        )
+
+        xl.lists.celltypes.spike <- runCustomGSEA(celltypes.ls, ranked.genes,
+            outdir = out,
+            outprefix = paste0(ranked.name, ".ctype"),
+            xlsx = xl.lists.celltypes.spike,
+            BPPARAM = bpparam()
+        )
+    }
+}
+```
+
+### Create Summary Table
+
+The `runGSEA` function generates a ton of output depending how many ranked lists, categories, and subcategories are used. Ultimately, it's pretty nice to have that all in a single file for easy sharing/perusal, so we'll write each results table to a worksheet of an excel file.
+
+```{r, eval = FALSE}
+# Sheets will be too long otherwise. May require additional shortening.
+names(xl.lists) <- lapply(names(xl.lists), sub, pattern = "REACTOME", replacement = "RCT")
+
+write.xlsx(xl.lists, file = "./GSEA/MSigDB.allresults.xlsx", overwrite = TRUE)
+saveRDS(xl.lists, file = "./GSEA/MSigDB.allresults.RDS")
+
+write.xlsx(xl.lists.gli.pub, file = "./GSEA/glioma_published.xlsx", overwrite = TRUE)
+saveRDS(xl.lists.gli.pub, file = "./GSEA/glioma_published.RDS")
+
+write.xlsx(xl.lists.gli.upub, file = "./GSEA/glioma_unpublished.xlsx", overwrite = TRUE)
+saveRDS(xl.lists.gli.upub, file = "./GSEA/glioma_unpublished.RDS")
+
+write.xlsx(xl.lists.celltypes, file = "./GSEA/custom_celltypes.xlsx", overwrite = TRUE)
+saveRDS(xl.lists.celltypes, file = "./GSEA/custom_celltypes.RDS")
+
+if (params$ercc) {
+    names(xl.lists.spike) <- lapply(names(xl.lists.spike), sub, pattern = "REACTOME", replacement = "RCT")
+
+    write.xlsx(xl.lists.spike, file = "./GSEA/ERCC_spike/MSigDB.allresults.xlsx", overwrite = TRUE)
+    saveRDS(xl.lists.spike, file = "./GSEA/ERCC_spike/MSigDB.allresults.RDS")
+
+    write.xlsx(xl.lists.gli.pub.spike, file = "./GSEA/ERCC_spike/glioma_published.xlsx", overwrite = TRUE)
+    saveRDS(xl.lists.gli.pub.spike, file = "./GSEA/ERCC_spike/glioma_published.RDS")
+
+    write.xlsx(xl.lists.gli.upub.spike, file = "./GSEA/ERCC_spike/glioma_unpublished.xlsx", overwrite = TRUE)
+    saveRDS(xl.lists.gli.upub.spike, file = "./GSEA/ERCC_spike/glioma_unpublished.RDS")
+
+    write.xlsx(xl.lists.celltypes.spike, file = "./GSEA/ERCC_spike/custom_celltypes.xlsx", overwrite = TRUE)
+    saveRDS(xl.lists.celltypes.spike, file = "./GSEA/ERCC_spike/custom_celltypes.RDS")
+}
+```
+
+### Create Summary Figures
+
+This returns a lot of output and can be hard to summarize, so this is an attempt to make the results more compact by chucking the top X significant genesets into a single figure.
+
+```{r, eval = FALSE}
+#' Summarize Gene Set Enrichment Analysis (GSEA) Results
+#'
+#' This function summarizes GSEA results by selecting the top significant gene sets. It creates an output directory
+#' and saves the summarized results into this directory.
+#'
+#' @param gsea.list A list of GSEA results as returned by `runGSEA` or `runCustomGSEA`.
+#' @param outdir The output directory for summarized results.
+#' @param padj.th The significance threshold (adjusted p-value) for filtering gene sets. Defaults to 0.05.
+#' @param top The number of top significant gene sets to consider. Defaults to 75.
+#'
+#' @return Invisible. The function creates an output directory and saves the summarized results there.
+#'
+#' @examples
+#' \dontrun{
+#' summarize_GSEA(gsea.list = my_gsea_results, outdir = "./summary", padj.th = 0.01, top = 50)
+#' }
+#'
+#' @author Jared Andrews
+summarize_GSEA <- function(gsea.list, outdir, padj.th = 0.05, top = 75) {
+    dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
+
+    for (i in seq_along(gsea.list)) {
+        ct <- names(gsea.list)[i]
+        df <- gsea.list[[i]]
+
+        df.sub <- df[df$padj < padj.th, ]
+
+        if (nrow(df.sub) > top) {
+            df.sub <- df.sub %>%
+                as_tibble() %>%
+                arrange(padj)
+            df.sub <- df.sub[1:top, ]
+        }
+
+        if (nrow(df.sub) > 0) {
+            df.sub <- df.sub %>%
+                as_tibble() %>%
+                arrange(desc(NES))
+
+            p <- ggplot(df.sub, aes(reorder(pathway, -NES), NES)) +
+                geom_col(aes(fill = -log10(padj))) +
+                coord_flip() +
+                labs(
+                    x = NULL, y = "Normalized Enrichment Score",
+                    title = paste0(ct, " - Top ", top, "\np.adj < ", padj.th)
+                ) +
+                theme_bw() +
+                scale_fill_viridis() +
+                ylim(-5, 5) +
+                theme(axis.text.y = element_text(size = 6), plot.title = element_text(size = 10)) +
+                scale_x_discrete(label = function(x) str_trunc(x, 55))
+
+            h <- 2 + (0.07 * nrow(df.sub))
+
+            pdf(paste0(outdir, "/", ct, ".padj.", padj.th, ".topbypadj", top, ".revrank.pdf"), width = 7, height = h)
+            print(p)
+            dev.off()
+        }
+    }
+}
+```
+
+
+```{r, eval = FALSE}
+summarize_GSEA(xl.lists, outdir = "./GSEA")
+summarize_GSEA(xl.lists.gli.pub, outdir = "./GSEA")
+summarize_GSEA(xl.lists.gli.upub, outdir = "./GSEA")
+summarize_GSEA(xl.lists.celltypes, outdir = "./GSEA")
+
+if (params$ercc) {
+    summarize_GSEA(xl.lists.spike, outdir = "./GSEA/ERCC_spike")
+    summarize_GSEA(xl.lists.gli.pub.spike, outdir = "./GSEA/ERCC_spike")
+    summarize_GSEA(xl.lists.gli.upub.spike, outdir = "./GSEA/ERCC_spike")
+    summarize_GSEA(xl.lists.celltypes.spike, outdir = "./GSEA/ERCC_spike")
+}
+```
+
+### Plot Leading Edge Genes
+
+GSEA returns the leading edge genes that are driving the score for a given signature. It can be useful to have a closer look at these genes in the form of boxplots and/or heatmaps.
+
+Note that this can take a very long time when many genesets are provided.
+
+```{r, eval = FALSE}
+#' Plot Leading Edge Genes from GSEA
+#'
+#' This function plots the leading edge genes from a GSEA analysis, which are the core genes that contribute to
+#' the enrichment signal. These plots can help understand the gene expression patterns in the form of boxplots or heatmaps.
+#'
+#' @param dds A DESeqDataSet object.
+#' @param gsea.lists A list of GSEA results as returned by `runGSEA` or `runCustomGSEA`.
+#' @param annot.by A character string or vector for column name(s) in `colData(dds)` by which to annotate the samples
+#' @param group.by A character string or vector for column name(s) in `colData(dds)` by which to group the samples
+#' @param outdir The directory where the output plots should be saved.
+#' @param use.assay A character string specifying the assay to use from the 'dds' object.
+#' @param cells.use A character vector specifying the cells to include in the plot.
+#' @param sig.thresh The significance threshold (adjusted p-value) for selecting gene sets. Defaults to 0.05.
+#' @param group.by2 A secondary character string or vector for column name(s) in `colData(dds)` to further group the samples. Defaults to NULL.
+#' @param split.by A character string or vector for column name(s) in `colData(dds)` to split the plot into multiple facets. Defaults to NULL.
+#' @param swap.rownames A character string for `rowData` column to switch the rownames (e.g. "SYMBOL"). Defaults to NULL.
+#' @param order.by A character string or vector for column name(s) in `colData(dds)` by which to order the samples Defaults to NULL.
+#'
+#' @return Invisible. The function saves the plots to the specified output directory.
+#'
+#' @examples
+#' \dontrun{
+#' plot_le(
+#'     dds = my_dds, gsea.lists = my_gsea_results, annot.by = "group", group.by = "condition",
+#'     outdir = "./plots", use.assay = "counts", cells.use = c("cell1", "cell2"),
+#'     sig.thresh = 0.01, group.by2 = "timepoint", split.by = "treatment"
+#' )
+#' }
+#'
+#' @note The function may take a long time to execute if many gene sets are provided.
+#'
+#' @author Jared Andrews
+plot_le <- function(dds, gsea.lists, annot.by, group.by, outdir, use.assay, cells.use, sig.thresh = 0.05,
+                    group.by2 = NULL, split.by = NULL, swap.rownames = NULL, order.by = NULL) {
+    for (i in seq_along(gsea.lists)) {
+        ct <- names(gsea.lists)[i]
+        df <- gsea.lists[[i]]
+
+        sig.paths <- df$pathway[df$padj < sig.thresh]
+        dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
+        for (p in seq_along(sig.paths)) {
+            path.name <- sig.paths[p]
+            le <- unlist(df$leadingEdge[df$pathway == path.name])
+
+            if (nchar(path.name) > 50) {
+                path.name <- substr(path.name, 1, 50)
+            }
+
+            if (length(le) > 1) {
+                pdf(paste0(outdir, "/", ct, ".", path.name, ".boxplot.pdf"), width = 5, height = 4)
+
+                for (i in use.assay) {
+                    pl <- dittoPlotVarsAcrossGroups(sce[, cells.use], le,
+                        group.by = group.by,
+                        plots = c("vlnplot", "jitter", "boxplot"), assay = i, sub = i,
+                        vlnplot.lineweight = 0.4, boxplot.lineweight = 0.5,
+                        swap.rownames = swap.rownames
+                    )
+                    print(pl)
+                    pl <- dittoPlotVarsAcrossGroups(sce[, cells.use], le,
+                        group.by = group.by,
+                        plots = c("vlnplot", "jitter", "boxplot"),
+                        adjustment = "relative.to.max", assay = i, sub = i,
+                        vlnplot.lineweight = 0.4, boxplot.lineweight = 0.5,
+                        swap.rownames = swap.rownames
+                    )
+                    print(pl)
+                    pl <- dittoPlotVarsAcrossGroups(sce[, cells.use], le,
+                        group.by = group.by,
+                        plots = c("vlnplot", "jitter", "boxplot"),
+                        adjustment = "none", assay = i, sub = i,
+                        vlnplot.lineweight = 0.4, boxplot.lineweight = 0.5,
+                        swap.rownames = swap.rownames
+                    )
+                    print(pl)
+
+                    if (!is.null(group.by2) & !is.null(split.by)) {
+                        pl <- dittoPlotVarsAcrossGroups(sce, le,
+                            group.by = group.by2, split.by = split.by,
+                            plots = c("vlnplot", "jitter", "boxplot"), assay = i, sub = i,
+                            vlnplot.lineweight = 0.4, boxplot.lineweight = 0.5,
+                            swap.rownames = swap.rownames
+                        )
+                        print(pl)
+                        pl <- dittoPlotVarsAcrossGroups(sce, le,
+                            group.by = group.by2, split.by = split.by,
+                            plots = c("vlnplot", "jitter", "boxplot"),
+                            adjustment = "relative.to.max", assay = i, sub = i,
+                            vlnplot.lineweight = 0.4, boxplot.lineweight = 0.5,
+                            swap.rownames = swap.rownames
+                        )
+                        print(pl)
+                        pl <- dittoPlotVarsAcrossGroups(sce, le,
+                            group.by = group.by2, split.by = split.by,
+                            plots = c("vlnplot", "jitter", "boxplot"),
+                            adjustment = "none", assay = i, sub = i,
+                            vlnplot.lineweight = 0.4, boxplot.lineweight = 0.5,
+                            swap.rownames = swap.rownames
+                        )
+                        print(pl)
+                    }
+                }
+
+                dev.off()
+
+                pdf(paste0(outdir, "/", ct, ".", path.name, ".heatmap.pdf"), width = 5, height = 9)
+                for (i in use.assay) {
+                    pl <- dittoHeatmap(sce, le,
+                        annot.by = annot.by, cells.use = cells.use, show_colnames = FALSE,
+                        breaks = seq(-3, 3, length.out = 51), cluster_rows = TRUE,
+                        fontsize_row = 5, cluster_cols = TRUE, assay = i, main = paste0(i, "_", path.name),
+                        swap.rownames = swap.rownames, drop_levels = TRUE, order.by = order.by
+                    )
+                    grid.draw(pl)
+
+                    pl <- dittoHeatmap(sce, le,
+                        annot.by = annot.by, show_colnames = FALSE,
+                        breaks = seq(-3, 3, length.out = 51), cluster_rows = TRUE,
+                        fontsize_row = 5, cluster_cols = TRUE, assay = i, main = paste0(i, "_", path.name),
+                        swap.rownames = swap.rownames, drop_levels = TRUE, order.by = order.by
+                    )
+                    grid.draw(pl)
+                }
+                dev.off()
+            }
+        }
+    }
+}
+
+
+for (i in seq_along(contrasts)) {
+    cont.name <- names(contrasts)[i]
+    grps <- contrasts[[i]][2:3]
+
+    plot_le(dds, xl.lists[grep(cont.name, names(xl.lists))],
+        annot.by = c("Diagnosis", "Location", "H3_Status", "Group"),
+        group.by = "Group", outdir = paste0("./GSEA/", cont.name, "/leading_edge"),
+        use.assay = c("lognorm", "vst"), cells.use = dds$Group %in% grps, swap.rownames = "SYMBOL"
+    )
+
+    plot_le(dds, xl.lists.gli.pub[grep(cont.name, names(xl.lists.gli.pub))],
+        annot.by = c("Diagnosis", "Location", "H3_Status", "Group"),
+        group.by = "Group", outdir = paste0("./GSEA/", cont.name, "/leading_edge"),
+        use.assay = c("lognorm", "vst"), cells.use = dds$Group %in% grps, swap.rownames = "SYMBOL"
+    )
+
+    plot_le(dds, xl.lists.gli.upub[grep(cont.name, names(xl.lists.gli.upub))],
+        annot.by = c("Diagnosis", "Location", "H3_Status", "Group"),
+        group.by = "Group", outdir = paste0("./GSEA/", cont.name, "/leading_edge"),
+        use.assay = c("lognorm", "vst"), cells.use = dds$Group %in% grps, swap.rownames = "SYMBOL"
+    )
+
+    plot_le(dds, xl.lists.celltypes[grep(cont.name, names(xl.lists.celltypes))],
+        annot.by = c("Diagnosis", "Location", "H3_Status", "Group"),
+        group.by = "Group", outdir = paste0("./GSEA/", cont.name, "/leading_edge"),
+        use.assay = c("lognorm", "vst"), cells.use = dds$Group %in% grps, swap.rownames = "SYMBOL"
+    )
+}
+```
+
+## SessionInfo
+
+<details>
+
+<summary>Click to expand</summary>
+
+```{r, echo = FALSE}
+sessionInfo()
+```
+
+</details>

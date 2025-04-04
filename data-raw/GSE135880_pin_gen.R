@@ -8,7 +8,7 @@ library(pins)
 # --pseudo_aligner salmon --max_memory 128.GB --skip_stringtie --max_multiqc_email_size 15.MB -resume
 
 description <- "
-  **Study - SubStudy - Experiment - RNA-seq Data**
+  **Wang J. et al SciAdv 2020 - GSE135880 - Mouse OPCs with _Eed_ KO - RNA-seq Data**
 
   This dataset contains O4+ immunopanned oligodendrocyte precursor cells (OPCs) from cortices of P5 or P6 Eed KO or control mice.
   See the [associated publication](https://www.science.org/doi/10.1126/sciadv.aaz6477) for more details.
