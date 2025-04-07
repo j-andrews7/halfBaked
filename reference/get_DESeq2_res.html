@@ -24,6 +24,7 @@ parameters to be specified and a design matrix to be manually adjusted."></head>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/i.RNAseq_PinGen_Template.html">halfBaked RNA-seq Pin Generation Template</a></li>
+    <li><a class="dropdown-item" href="../articles/ii_a.RNAseq_DESeq2_Template.html">halfBaked Template - RNA-seq - DESeq2 Differential Expression</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -76,8 +77,8 @@ parameters to be specified and a design matrix to be manually adjusted.</p>
 
 <dt id="arg-contrasts">contrasts<a class="anchor" aria-label="anchor" href="#arg-contrasts"></a></dt>
 <dd><p>A named list of contrasts, e.g. <code>list("condition" = c("condition", "A", "B"))</code>.
-#'   The first element is the variable of interest, the second is the test, and the third is the reference level.
-#'   The name of  each element in the list will be used as a name in the results table.</p></dd>
+The first element is the variable of interest, the second is the test, and the third is the reference level.
+The name of  each element in the list will be used as a name in the results table.</p></dd>
 
 
 <dt id="arg-res-list">res.list<a class="anchor" aria-label="anchor" href="#arg-res-list"></a></dt>
@@ -144,7 +145,8 @@ If <code>add.rowData</code> is supplied, these will be returned as <a href="http
 That is, if <code>lfc.th</code> is provided, the results table p-values will reflect that testing threshold.
 If <code>shrink.method</code> is set to <code>ashr</code> with <code>lfc.th</code>, s-values will be returned in addition to the MLE p-values.</p>
 <p>It is possible to have shrunken FCs that are near 0 that still have a significant p-value.
-This is frustrating, as it means you end up having to do post-hoc filtering or filter with s-values, which are more difficult to interpret.</p>
+This is frustrating, as it means you end up having to do post-hoc filtering on LFC
+or filter with s-values, which are more difficult to interpret than the adjusted p-values.</p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -255,21 +257,20 @@ This is frustrating, as it means you end up having to do post-hoc filtering or f
 <span class="r-msg co"><span class="r-pr">#&gt;</span> computing FSOS 'false sign or small' s-values (T=0.585)</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "condition"                        "condition-shLFC"                 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3] "condition-shLFC0.321928094887362" "condition-LFC0.321928094887362"  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [5] "condition-shLFC0.584962500721156" "condition-LFC0.584962500721156"  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "condition-shLFC"      "condition"            "condition-shLFC0.322"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [4] "condition-LFC0.322"   "condition-shLFC0.585" "condition-LFC0.585"  </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">res</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> log2 fold change (MLE): condition A vs B </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> log2 fold change (MMSE): condition A vs B </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Wald test p-value: condition A vs B </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> DataFrame with 6 rows and 6 columns</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        baseMean log2FoldChange     lfcSE      stat    pvalue      padj</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       &lt;numeric&gt;      &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> gene1   4.12848     -0.2906540  0.969207 -0.299888  0.764262  0.984393</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> gene2  17.06387     -0.2622629  0.427627 -0.613298  0.539679  0.972929</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> gene3 178.18356      0.1426357  0.334604  0.426282  0.669902  0.974509</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> gene4   5.60499      0.4369778  0.766539  0.570066  0.568633  0.974509</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> gene5  90.75194      0.1498189  0.283374  0.528697  0.597016  0.974509</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> gene6   5.55006     -0.0913117  0.773288 -0.118082  0.906002  0.992109</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> DataFrame with 6 rows and 5 columns</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        baseMean log2FoldChange     lfcSE    pvalue      padj</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       &lt;numeric&gt;      &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> gene1   4.12848    -0.01272617 0.2089038  0.764262  0.984393</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> gene2  17.06387    -0.01278438 0.1027523  0.539679  0.972929</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> gene3 178.18356     0.00789678 0.0810028  0.669902  0.974509</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> gene4   5.60499     0.02010562 0.1819637  0.568633  0.974509</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> gene5  90.75194     0.00999421 0.0755899  0.597016  0.974509</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> gene6   5.55006    -0.00378005 0.1580818  0.906002  0.992109</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
