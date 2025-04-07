@@ -160,10 +160,10 @@ get_DESeq2_res <- function(
                 # ashr does not need coef, this is to ensure no error with user-supplied model matrix/list contrasts
                 if (shrink.method == "ashr") {
                     coef <- NULL
-                    out.name <- paste0(rname, "-shLFC", l)
+                    out.name <- paste0(rname, "-shLFC", round(l, 3))
                     shrink <- lfcShrink(dds, res = res, contrast = con, lfcThreshold = l, type = shrink.method)
                 } else {
-                    out.name <- paste0(rname, "-shLFC", l)
+                    out.name <- paste0(rname, "-shLFC", round(l, 3))
                     shrink <- lfcShrink(dds, res = res, coef = coef, type = shrink.method)
                 }
 
@@ -175,7 +175,7 @@ get_DESeq2_res <- function(
                 res.list[[out.name]] <- shrink
             }
 
-            out.name <- paste0(rname, "-LFC", l)
+            out.name <- paste0(rname, "-LFC", round(l, 3))
             res.list[[out.name]] <- res
         }
     }

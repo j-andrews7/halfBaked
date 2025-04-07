@@ -28,6 +28,7 @@ cts <- read.table("salmon.merged.gene_counts_length_scaled.tsv", header = TRUE, 
 
 # nf-core RNA-seq pipeline generates a counts table with the first two columns as gene IDs and gene symbols.
 genes <- cts[, 1:2]
+names(genes) <- c("ENSEMBL", "SYMBOL")
 rownames(cts) <- cts[, 1]
 cts <- cts[, -c(1:2)]
 

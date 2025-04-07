@@ -86,8 +86,10 @@ cat(metadata(se)$description)
 
 See `get_DESEQ2_res()` for more details on the parameters.
 
-```{r}
-# Generate DESeqDataSet & run DESeq2.
+```{r, eval = FALSE}
+# Generate DESeqDataSet & run DESeq2. Needs integer counts, so round.
+assay(se, "counts") <- round(assay(se, "counts"))
+
 # Design is just being set to no design here (~ 1), since we'll set it later.
 dds <- DESeqDataSet(se, design = ~1)
 
@@ -136,17 +138,13 @@ contrasts <- list(
     "Eed_cKO.v.Control" = c("Group", "Eed_cKO", "Control")
 )
 
-res <- get_DESEQ2_res(dds, res.list = res, contrasts = contrasts)
-
-# This just shortens names so that writing to excel won't scream.
-names(res) <- gsub("0.584962500721156", "0.58", names(res))
-names(res) <- gsub("0.321928094887362", "0.32", names(res))
+res <- get_DESeq2_res(dds, res.list = res, contrasts = contrasts, add.rowData = c("gene_id", "gene_name"))
 
 dds.meta <- metadata(dds)
 dds.meta$DE.Results <- res
 metadata(dds) <- dds.meta
 
-# Save
+# Save all results to file if wanted.
 write.xlsx(res, file = "./de/All.Comparisons.DEGs.xlsx", overwrite = TRUE)
 saveRDS(dds, "dds.RDS")
 
@@ -157,11 +155,8 @@ if (params$ercc) {
     # Note norm.ercc parameter.
     res.spike <- get_DESEQ2_res(dds.spike,
         res.list = res.spike, contrasts = contrasts, 
-        norm.ercc = TRUE
+        norm.ercc = TRUE, add.rowData = c("ENSEMBL", "SYMBOL")
     )
-
-    names(res.spike) <- gsub("0.584962500721156", "0.58", names(res.spike))
-    names(res.spike) <- gsub("0.321928094887362", "0.32", names(res.spike))
 
     dds.spike.meta <- metadata(dds.spike)
     dds.spike.meta$DE.Results <- res.spike
@@ -176,7 +171,7 @@ if (params$ercc) {
 
 As a proportion of total counts in each sample. Can just delete this section if ERCC not in samples.
 
-```{r}
+```{r, eval = FALSE}
 if (params$ercc) {
     spikeFraction
 }
@@ -185,11 +180,10 @@ if (params$ercc) {
 # Enrichment/Over-representation Analyses
 
 Hypergeometric enrichment analyses are pretty standard.
-
 We use the `run_enrichment()` function to make these more convenient to run.
 This function largely uses the `clusterProfiler` package and spits out a boatload of figures and tables in the output directory.
 
-```{r}
+```{r, eval = FALSE}
 # Set species and database stuff for enrichments
 if (params$species %in% c("human", "mouse")) {
     if (params$species == "human") {
@@ -207,7 +201,7 @@ if (params$species %in% c("human", "mouse")) {
     stop("species parameter must be 'human' or 'mouse'")
 }
 
-run_enrichment(res, OrgDb = orgdb)
+run_enrichment(res, OrgDb = orgdb, method = "KEGG")
 
 if (params$ercc) {
     run_enrichGO(res.spike, OrgDb = orgdb, outdir = "./enrichments/ERCC_spike")
