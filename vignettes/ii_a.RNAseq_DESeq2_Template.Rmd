@@ -65,6 +65,7 @@ If you already have a SummarizedExperiment object, you can skip this step and lo
 
 ```{r, message=FALSE}
 library(halfBaked)
+library(SummarizedExperiment)
 library(pins)
 library(openxlsx)
 
@@ -128,7 +129,6 @@ if (params$ercc) {
 }
 
 
-
 res <- list()
 
 # Whatever can be used as name of contrast vectors, though typically they should be a group vs another group.
@@ -138,10 +138,10 @@ contrasts <- list(
     "Eed_cKO.v.Control" = c("Group", "Eed_cKO", "Control")
 )
 
-res <- get_DESeq2_res(dds, res.list = res, contrasts = contrasts, add.rowData = c("gene_id", "gene_name"))
+res <- get_DESeq2_res(dds, res.list = res, contrasts = contrasts, add.rowData = c("ENSEMBL", "SYMBOL"))
 
 dds.meta <- metadata(dds)
-dds.meta$DE.Results <- res
+dds.meta$DESeq2.Results <- res
 metadata(dds) <- dds.meta
 
 # Save all results to file if wanted.
@@ -201,7 +201,9 @@ if (params$species %in% c("human", "mouse")) {
     stop("species parameter must be 'human' or 'mouse'")
 }
 
-run_enrichment(res, OrgDb = orgdb, method = "KEGG")
+run_enrichment(res, OrgDb = orgdb, method = "KEGG", species = params$species)
+run_enrichment(res, OrgDb = orgdb, method = "Reactome", species = params$species)
+run_enrichment(res, OrgDb = orgdb, method = "GO", species = params$species)
 
 if (params$ercc) {
     run_enrichGO(res.spike, OrgDb = orgdb, outdir = "./enrichments/ERCC_spike")

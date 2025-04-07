@@ -33,9 +33,10 @@
 #' @return Saves enrichment results and plots to the output directory; returns invisible objects.
 #'
 #' @importFrom clusterProfiler compareCluster enrichGO enrichKEGG enricher bitr setReadable
-#'   emapplot dotplot cnetplot
+#'   dotplot cnetplot
 #' @importFrom enrichplot pairwise_termsim treeplot
 #' @importFrom ReactomePA enrichPathway
+#' @importFrom ggplot2 rel
 #'
 #' @export
 #'
@@ -72,6 +73,8 @@ run_enrichment <- function(
     # Cluster enrichment mode: using a list of DE results
     if (!is.null(res.list)) {
         for (comp in names(res.list)) {
+            message("Running enrichment for ", comp)
+
             df <- res.list[[comp]]
             comp_name <- comp
             if (lfc.th != 0) comp_name <- paste0(comp_name, "-LFC", round(lfc.th, 3), "filt")
@@ -117,80 +120,92 @@ run_enrichment <- function(
                     if (!is.null(ck)) {
                         ck <- setReadable(ck, OrgDb = OrgDb, keyType = "ENTREZID")
                         ego <- pairwise_termsim(ck)
-                        pdf(file.path(out_path, paste0("GO_Enrichments.Top20_", ont_item, ".pdf")),
+                        pdf(file.path(out_path, paste0("GO_", ont_item, "_Enrichments.Top20.pdf")),
                             width = 6, height = 4 + 0.025 * length(ego@compareClusterResult$Cluster)
                         )
                         print(dotplot(ego, showCategory = 20, font.size = 7))
                         print(dotplot(ego, size = "count", showCategory = 20, font.size = 7))
                         dev.off()
-                        pdf(file.path(out_path, paste0("GO_Enrichments.termsim.Top20_", ont_item, ".pdf")),
-                            width = 9, height = 9
-                        )
-                        print(emapplot(ego,
-                            pie = "count", cex_category = 0.9,
-                            cex_label_category = 0.9, layout = "kk", repel = TRUE, showCategory = 20
-                        ))
-                        dev.off()
-                        saveRDS(ego, file = file.path(out_path, paste0("enrichGO_", ont_item, ".RDS")))
+
+                        if (nrow(as.data.frame(ego)) > 2) {
+                            pdf(file.path(out_path, paste0("GO_", ont_item, "_Enrichments.termsim.Top30_Tree.pdf")),
+                                width = 17, height = 14
+                            )
+                            print(treeplot(ego,
+                                showCategory = 30, fontsize = 4,
+                                offset.params = list(
+                                    bar_tree = rel(2.5), tiplab = rel(2.5),
+                                    extend = 0.3, hexpand = 0.1
+                                ),
+                                cluster.params = list(method = "ward.D", n = min(c(6, ceiling(sqrt(nrow(ego))))), color = NULL, label_words_n = 5, label_format = 30)
+                            ))
+                            dev.off()
+                        }
+                        
+                        saveRDS(ego, file = file.path(out_path, paste0("GO_", ont_item, "_Enrichments.RDS")))
                         write.table(as.data.frame(ego),
-                            file = file.path(out_path, paste0("enrichGO_", ont_item, ".txt")),
+                            file = file.path(out_path, paste0("GO_", ont_item, "_Enrichments.txt")),
                             sep = "\t", row.names = FALSE, quote = FALSE
                         )
                     }
                 }
             } else {
                 enrich_fun <- switch(method,
-                    KEGG = enrichKEGG,
-                    Reactome = enrichPathway,
-                    universal = enricher
+                    KEGG = "enrichKEGG",
+                    Reactome = "enrichPathway",
+                    universal = "enricher"
                 )
+                # Set parameters for the enrichment function
                 params <- list(...)
-                if (method == "KEGG") params$organism <- kegg_org
-                if (method == "Reactome") params$organism <- reactome_org
+
+                if (method == "KEGG") {
+                    params$organism <- kegg_org
+                    params$keyType <- "kegg"
+                }
+
+                if (method == "Reactome") {
+                    params$organism <- reactome_org
+                    params$readable <- TRUE
+                }
+
                 ck <- do.call(compareCluster, c(list(
                     geneCluster = gene_clusters,
-                    fun = enrich_fun, universe = bg_ids,
-                    keyType = if (method == "KEGG") "kegg" else "ENTREZID"
+                    fun = enrich_fun, universe = bg_ids
                 ), params))
+
                 if (!is.null(ck)) {
-                    if (method %in% c("KEGG", "Reactome")) {
+                    if (method %in% c("KEGG")) {
                         ck <- setReadable(ck, OrgDb = OrgDb, keyType = "ENTREZID")
                     }
+
                     ego <- pairwise_termsim(ck)
+
                     pdf(file.path(out_path, paste0(method, "_Enrichments.Top20.pdf")),
                         width = 6, height = 4 + 0.015 * length(ego@compareClusterResult$Cluster)
                     )
                     print(dotplot(ego, showCategory = 20, font.size = 7))
                     print(dotplot(ego, size = "count", showCategory = 20, font.size = 7))
                     dev.off()
-                    pdf(file.path(out_path, paste0(method, "_Enrichments.termsim.Top20.pdf")),
-                        width = 9, height = 9
-                    )
-                    print(emapplot(ego,
-                        pie = "count", cex_category = 0.9,
-                        cex_label_category = 0.9, layout = "kk", repel = TRUE, showCategory = 20
-                    ))
-                    dev.off()
+
                     if (nrow(as.data.frame(ego)) > 2) {
                         pdf(file.path(out_path, paste0(method, "_Enrichments.termsim.Top30_Tree.pdf")),
                             width = 17, height = 14
                         )
-                        print(treeplot(ego, showCategory = 30, fontsize = 4))
-                        dev.off()
-                        pdf(file.path(out_path, paste0(method, "_Enrichments.termsim.Top10_FullNet.pdf")),
-                            width = 15, height = 15
-                        )
-                        print(cnetplot(ego, showCategory = 10, layout = "kk"))
-                        dev.off()
-                        pdf(file.path(out_path, paste0(method, "_Enrichments.termsim.Top5_FullNet.pdf")),
-                            width = 12, height = 12
-                        )
-                        print(cnetplot(ego, showCategory = 5, layout = "kk"))
+                        print(treeplot(ego,
+                            showCategory = 30, fontsize = 4,
+                            offset.params = list(
+                                bar_tree = rel(2.5), tiplab = rel(3),
+                                extend = 0.3, hexpand = 0.1
+                            ),
+                            cluster.params = list(method = "ward.D", n = min(c(6, ceiling(sqrt(nrow(ego))))), color = NULL, label_words_n = 5, label_format = 30)
+                        ))
                         dev.off()
                     }
-                    saveRDS(ego, file = file.path(out_path, paste0(method, "_results.RDS")))
+
+                    # Save results
+                    saveRDS(ego, file = file.path(out_path, paste0(method, "_Enrichments.RDS")))
                     write.table(as.data.frame(ego),
-                        file = file.path(out_path, paste0(method, "_results.txt")),
+                        file = file.path(out_path, paste0(method, "_Enrichments.txt")),
                         sep = "\t", row.names = FALSE, quote = FALSE
                     )
                 }
@@ -200,11 +215,14 @@ run_enrichment <- function(
         # Simple enrichment mode
         out_path <- file.path(outdir, name)
         dir.create(out_path, recursive = TRUE, showWarnings = FALSE)
+
         if (id.type == "ENSEMBL") {
             genes <- sapply(strsplit(as.character(genes), "\\."), `[`, 1)
             bg <- sapply(strsplit(as.character(bg), "\\."), `[`, 1)
         }
+
         skip <- FALSE
+
         tryCatch(
             {
                 genes <- bitr(genes, fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
@@ -214,42 +232,45 @@ run_enrichment <- function(
                 skip <<- TRUE
             }
         )
+
         if (skip) {
             return(NULL)
         }
+
         bg <- bitr(bg, fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
+
         if (method == "GO") {
             res_list <- list()
             for (ont_item in ont) {
                 ego <- enrichGO(genes, OrgDb = OrgDb, universe = bg, ont = ont_item, readable = TRUE, ...)
+
                 if (nrow(as.data.frame(ego)) > 0) {
                     ego <- pairwise_termsim(ego)
-                    pdf(file.path(out_path, paste0("enrichGO_", ont_item, ".Top30.pdf")),
+                    pdf(file.path(out_path, paste0("GO_", ont_item, ".Top30.pdf")),
                         width = 6, height = 8
                     )
                     print(dotplot(ego, showCategory = 30, font.size = 7))
                     print(barplot(ego, showCategory = 30, font.size = 7))
                     dev.off()
+
                     if (nrow(as.data.frame(ego)) > 2) {
-                        pdf(file.path(out_path, paste0("enrichGO_", ont_item, ".termsim.Top30_Tree.pdf")),
+                        pdf(file.path(out_path, paste0("GO_", ont_item, ".termsim.Top30_Tree.pdf")),
                             width = 17, height = 14
                         )
-                        print(treeplot(ego, showCategory = 30, fontsize = 4))
-                        dev.off()
-                        pdf(file.path(out_path, paste0("enrichGO_", ont_item, ".termsim.Top10_FullNet.pdf")),
-                            width = 15, height = 15
-                        )
-                        print(cnetplot(ego, showCategory = 10, layout = "kk"))
-                        dev.off()
-                        pdf(file.path(out_path, paste0("enrichGO_", ont_item, ".termsim.Top5_FullNet.pdf")),
-                            width = 12, height = 12
-                        )
-                        print(cnetplot(ego, showCategory = 5, layout = "kk"))
+                        print(treeplot(ego,
+                            showCategory = 30, fontsize = 4,
+                            offset.params = list(
+                                bar_tree = rel(2.5), tiplab = rel(3),
+                                extend = 0.3, hexpand = 0.1
+                            ),
+                            cluster.params = list(method = "ward.D", n = min(c(6, ceiling(sqrt(nrow(ego))))), color = NULL, label_words_n = 5, label_format = 30)
+                        ))
                         dev.off()
                     }
-                    saveRDS(ego, file = file.path(out_path, paste0("enrichGO_", ont_item, ".RDS")))
+
+                    saveRDS(ego, file = file.path(out_path, paste0("GO_", ont_item, "_Enrichments.RDS")))
                     write.table(as.data.frame(ego),
-                        file = file.path(out_path, paste0("enrichGO_", ont_item, ".txt")),
+                        file = file.path(out_path, paste0("GO_", ont_item, "_Enrichments.txt")),
                         sep = "\t", row.names = FALSE, quote = FALSE
                     )
                     res_list[[ont_item]] <- ego
@@ -262,30 +283,37 @@ run_enrichment <- function(
                 Reactome = enrichPathway,
                 universal = enricher
             )
+
             params <- list(...)
             if (method == "KEGG") params$organism <- kegg_org
             if (method == "Reactome") params$organism <- reactome_org
+
             ego <- do.call(enrich_fun, c(list(gene = genes, universe = bg), params))
+
             if (nrow(as.data.frame(ego)) > 0) {
                 ego <- pairwise_termsim(ego)
                 pdf(file.path(out_path, paste0(method, ".Top30.pdf")), width = 6, height = 8)
                 print(dotplot(ego, showCategory = 30, font.size = 7))
                 print(barplot(ego, showCategory = 30, font.size = 7))
                 dev.off()
+
                 if (nrow(as.data.frame(ego)) > 2) {
                     pdf(file.path(out_path, paste0(method, ".termsim.Top30_Tree.pdf")), width = 17, height = 14)
-                    print(treeplot(ego, showCategory = 30, fontsize = 4))
-                    dev.off()
-                    pdf(file.path(out_path, paste0(method, ".termsim.Top10_FullNet.pdf")), width = 15, height = 15)
-                    print(cnetplot(ego, showCategory = 10, layout = "kk"))
-                    dev.off()
-                    pdf(file.path(out_path, paste0(method, ".termsim.Top5_FullNet.pdf")), width = 12, height = 12)
-                    print(cnetplot(ego, showCategory = 5, layout = "kk"))
+                    print(treeplot(ego,
+                            showCategory = 30, fontsize = 4,
+                            offset.params = list(
+                                bar_tree = rel(2.5), tiplab = rel(3),
+                                extend = 0.3, hexpand = 0.1
+                            ),
+                            cluster.params = list(method = "ward.D", n = min(c(6, ceiling(sqrt(nrow(ego))))), color = NULL, label_words_n = 5, label_format = 30)
+                        ))
                     dev.off()
                 }
-                saveRDS(ego, file = file.path(out_path, paste0(method, ".RDS")))
+
+                # Save results
+                saveRDS(ego, file = file.path(out_path, paste0(method, "_Enrichments.RDS")))
                 write.table(as.data.frame(ego),
-                    file = file.path(out_path, paste0(method, ".txt")),
+                    file = file.path(out_path, paste0(method, "_Enrichments.txt")),
                     sep = "\t", row.names = FALSE, quote = FALSE
                 )
                 return(invisible(ego))

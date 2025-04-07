@@ -124,13 +124,6 @@ get_DESeq2_res <- function(
         dds <- DESeq(dds, BPPARAM = BPPARAM)
         res1 <- results(dds, contrast = con, alpha = alpha)
 
-        if (!is.null(add.rowData) & all(add.rowData %in% colnames(rowData(dds)))) {
-            message("Adding rowData columns to results table.")
-            res1 <- cbind(res1, rowData(dds)[, add.rowData])
-        }
-
-        res.list[[rname]] <- res1
-
         if (!is.null(shrink.method)) {
             out.name <- paste0(rname, "-shLFC")
 
@@ -149,12 +142,16 @@ get_DESeq2_res <- function(
             res.list[[out.name]] <- shrink
         }
 
+        # Add original results to list.
+        if (!is.null(add.rowData) & all(add.rowData %in% colnames(rowData(dds)))) {
+            message("Adding rowData columns to results table.")
+            res1 <- cbind(res1, rowData(dds)[, add.rowData])
+        }
+
+        res.list[[rname]] <- res1
+
         for (l in lfc.th) {
             res <- results(dds, contrast = con, alpha = alpha, lfcThreshold = l)
-            if (!is.null(add.rowData) & all(add.rowData %in% colnames(rowData(dds)))) {
-                message("Adding rowData columns to results table.")
-                res <- cbind(res, rowData(dds)[, add.rowData])
-            }
 
             if (!is.null(shrink.method)) {
                 # ashr does not need coef, this is to ensure no error with user-supplied model matrix/list contrasts
@@ -173,6 +170,11 @@ get_DESeq2_res <- function(
                 }
 
                 res.list[[out.name]] <- shrink
+            }
+
+            if (!is.null(add.rowData) & all(add.rowData %in% colnames(rowData(dds)))) {
+                message("Adding rowData columns to results table.")
+                res <- cbind(res, rowData(dds)[, add.rowData])
             }
 
             out.name <- paste0(rname, "-LFC", round(l, 3))
