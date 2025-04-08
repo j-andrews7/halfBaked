@@ -1,5 +1,5 @@
 ---
-title: "halfBaked Template - RNA-seq - DESeq2 Differential Expression"
+title: "halfBaked - RNA-seq - DESeq2 Differential Expression"
 author: 
   - name: Jared Andrews
     affiliation:
