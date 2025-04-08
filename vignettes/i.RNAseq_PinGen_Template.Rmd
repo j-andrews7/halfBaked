@@ -45,9 +45,14 @@ Noting the pipeline version, genome information, and any altered parameters here
 As an example, this notebook details pin generation for data from [GSE135880](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE135880), which was processed with the nf-core RNA-seq pipeline:
 
 ```{bash, eval=FALSE}
-nextflow run nf-core/rnaseq -r 3.12.0 -profile singularity -c "$BAKER_REF"/nf_configs/rnaseq.config -w /scratch_space/jandrews/"$LSB_JOBNAME" \
---outdir ./nfcore_mm10 --email jared.andrews@stjude.org --input nfcore_rnaseq.samplesheet.csv --gencode --genome MM10 --aligner star_salmon \
---pseudo_aligner salmon --max_memory 128.GB --skip_stringtie --max_multiqc_email_size 15.MB -resume
+nextflow run nf-core/rnaseq -r 3.12.0 -profile singularity \
+-c "$BAKER_REF"/nf_configs/rnaseq.config \
+-w /scratch_space/jandrews/"$LSB_JOBNAME" \
+--outdir ./nfcore_mm10 --email jared.andrews@stjude.org \
+--input nfcore_rnaseq.samplesheet.csv --gencode --genome MM10 \
+--aligner star_salmon \
+--pseudo_aligner salmon --max_memory 128.GB --skip_stringtie \
+--max_multiqc_email_size 15.MB -resume
 ```
 
 ## Params Usage
@@ -70,8 +75,10 @@ Read more about the [pins](https://pins.rstudio.com/articles/pins.html) package 
 description <- "
   **Wang J. et al SciAdv 2020 - GSE135880 - Mouse OPCs with _Eed_ KO - RNA-seq Data**
 
-  This dataset contains O4+ immunopanned oligodendrocyte precursor cells (OPCs) from cortices of P5 or P6 Eed KO or control mice.
-  See the [associated publication](https://www.science.org/doi/10.1126/sciadv.aaz6477) for more details.
+  This dataset contains O4+ immunopanned oligodendrocyte precursor cells (OPCs) from 
+  cortices of P5 or P6 Eed KO or control mice.
+  See the [associated publication](https://www.science.org/doi/10.1126/sciadv.aaz6477) 
+  for more details.
 
   Please see the Pin generation code to view how this data was processed.
   "
@@ -85,23 +92,27 @@ library(readr)
 library(pins)
 
 # Load sample metadata.
-meta <- read.csv("nfcore_rnaseq.samplesheet.csv", header = TRUE, stringsAsFactors = TRUE)
+meta <- read.csv("nfcore_rnaseq.samplesheet.csv", header = TRUE,
+                 stringsAsFactors = TRUE)
 
 # Drop FASTQ file locations.
 meta <- meta[, !colnames(meta) %in% c("fastq_1", "fastq_2")]
 
-# Load counts. This object was generated using tximport via the nf-core RNA-seq pipeline on the salmon quants and
+# Load counts. This object was generated using tximport via the nf-core 
+# RNA-seq pipeline on the salmon quants and
 # is appropriate for pretty much all downstream DE packages (DESeq2, edgeR, limma).
-cts <- read.table("salmon.merged.gene_counts_length_scaled.tsv", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+cts <- read.table("salmon.merged.gene_counts_length_scaled.tsv", header = TRUE, 
+                  sep = "\t", stringsAsFactors = FALSE)
 
-# nf-core RNA-seq pipeline generates a counts table with the first two columns as gene IDs and gene symbols.
+# Counts table has first two columns as gene IDs and gene symbols.
 genes <- cts[, 1:2]
 names(genes) <- c("ENSEMBL", "SYMBOL")
 rownames(cts) <- cts[, 1]
 cts <- cts[, -c(1:2)]
 
 # Also carry along TPMs as an additional assay.
-tpms <- read.table("salmon.merged.gene_tpm.tsv", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+tpms <- read.table("salmon.merged.gene_tpm.tsv", header = TRUE, 
+                   sep = "\t", stringsAsFactors = FALSE)
 rownames(tpms) <- tpms[, 1]
 tpms <- tpms[, -c(1:2)]
 
@@ -122,7 +133,7 @@ se <- SummarizedExperiment(
 ## Add Metadata to Summarized Experiment and Upload Pin
 
 ```{r, eval = FALSE}
-# Render this notebook and add it to the metadata of the pin along with experiment metadata.
+# Render notebook and add to the metadata of the pin along with experiment metadata.
 pin_code <- read_file(rmarkdown::render("0.RNAseq_PinGen_Template.Rmd", quiet = TRUE))
 metadata(se) <- list(pin_code = pin_code, description = description)
 
@@ -131,7 +142,8 @@ saveRDS(se, file = paste0(params$pin_name, ".rds"))
 
 # Here you would connect to your board and write the pin to it.
 board <- board_connect(server = params$board)
-pin_write(board, se, type = "rds", name = params$pin_name, title = params$pin_name, description = params$pin_description)
+pin_write(board, se, type = "rds", name = params$pin_name, title = params$pin_name, 
+          description = params$pin_description)
 ```
 
 # Session Info

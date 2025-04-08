@@ -1,0 +1,12 @@
+file: GSE135880_SummarizedExperiment_mm10.rds
+file_size: 7832404
+pin_hash: fe5a0a09d99817ee
+type: rds
+title: GSE135880_SummarizedExperiment_mm10
+description: A SummarizedExperiment containing counts for O4+ immunopanned oligodendrocyte
+  precursor cells (OPCs) from cortices of P5 or P6 Eed KO or control mice, along with
+  DESeq2 analysis results in the metadata.
+tags: ~
+urls: ~
+created: 20250408T151032Z
+api_version: 1

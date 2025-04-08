@@ -61,7 +61,7 @@ It is meant to be a starting point for your own analysis and is not a comprehens
 This vignette assumes that you have already created a pin with the `halfBaked` package (see `vignette("halfBaked Pin Generation Template")`) that you want to load 
 or that you have a `SummarizedExperiment` object that you want to use.
 
-If you already have a SummarizedExperiment object, you can skip this step and load it directly.
+If you already have a `SummarizedExperiment` object, you can skip this step and load it directly.
 
 ```{r, message=FALSE}
 library(halfBaked)
@@ -77,7 +77,7 @@ se <- pin_read(board, params$pin_name)
 
 # Dataset Description
 
-If stored in the SummarizedExperiment, we can show the experiment description directly.
+If stored in the `SummarizedExperiment`, we can show the experiment description directly.
 
 ```{r, results='asis'}
 cat(metadata(se)$description)
@@ -85,7 +85,7 @@ cat(metadata(se)$description)
 
 # Run Differential Expression via DESeq2
 
-See `get_DESEQ2_res()` for more details on the parameters.
+See `halfBaked::get_DESEQ2_res()` for more details on the parameters.
 
 ```{r, eval = FALSE}
 # Generate DESeqDataSet & run DESeq2. Needs integer counts, so round.
@@ -117,7 +117,8 @@ if (params$ercc) {
     spikeFraction <- spikeFraction / colSums(counts(dds, normalized = FALSE))
 
     # Save fractions
-    write.table(spikeFraction, "spike_fraction.txt", sep = "\t", col.names = FALSE, quote = FALSE)
+    write.table(spikeFraction, "spike_fraction.txt", sep = "\t", 
+                col.names = FALSE, quote = FALSE)
 
     dds.spike <- estimateSizeFactors(dds, controlGenes = rownames(dds) %in% spikes)
     dds.spike <- DESeq(dds.spike)
@@ -131,14 +132,13 @@ if (params$ercc) {
 
 res <- list()
 
-# Whatever can be used as name of contrast vectors, though typically they should be a group vs another group.
-# I use -b_OTHERVARIABLES in the name to indicate additional variables that were accounted for in the model.
-# That is, fed to the `block` parameter of `get_DESEQ2_res`, if provided.
+# Whatever can be used as name of contrast vectors.
 contrasts <- list(
     "Eed_cKO.v.Control" = c("Group", "Eed_cKO", "Control")
 )
 
-res <- get_DESeq2_res(dds, res.list = res, contrasts = contrasts, add.rowData = c("ENSEMBL", "SYMBOL"))
+res <- get_DESeq2_res(dds, res.list = res, contrasts = contrasts, 
+                      add.rowData = c("ENSEMBL", "SYMBOL"))
 
 dds.meta <- metadata(dds)
 dds.meta$DESeq2.Results <- res
@@ -162,7 +162,10 @@ if (params$ercc) {
     dds.spike.meta$DE.Results <- res.spike
     metadata(dds.spike) <- dds.spike.meta
 
-    write.xlsx(res.spike, file = "./de/ERCC_spike/All.Comparisons.DEGs.ERCC_spikein.xlsx", overwrite = TRUE)
+    write.xlsx(res.spike, 
+               file = "./de/ERCC_spike/All.Comparisons.DEGs.ERCC_spikein.xlsx",
+               overwrite = TRUE)
+
     saveRDS(dds.spike, "dds.ERCC_spikein.RDS")
 }
 ```
