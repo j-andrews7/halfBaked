@@ -108,17 +108,17 @@ cts <- read.table("salmon.merged.gene_counts_length_scaled.tsv", header = TRUE,
 genes <- cts[, 1:2]
 names(genes) <- c("ENSEMBL", "SYMBOL")
 rownames(cts) <- cts[, 1]
-cts <- cts[, -c(1:2)]
+
+# Set metadata rownames and ensure they match count column names.
+rownames(meta) <- meta$sample
 
 # Also carry along TPMs as an additional assay.
 tpms <- read.table("salmon.merged.gene_tpm.tsv", header = TRUE, 
                    sep = "\t", stringsAsFactors = FALSE)
 rownames(tpms) <- tpms[, 1]
-tpms <- tpms[, -c(1:2)]
+tpms <- tpms[, rownames(meta)]
 
-# Set metadata rownames and ensure they match count column names.
-rownames(meta) <- meta$sample
-all(rownames(meta) == colnames(cts))
+cts <- cts[, rownames(meta)]
 
 # Create a SummarizedExperiment object.
 se <- SummarizedExperiment(
