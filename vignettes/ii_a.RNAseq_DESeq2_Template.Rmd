@@ -22,6 +22,9 @@ params:
   species: mouse
   pin_name: "GSE135880_SummarizedExperiment_mm10"
   board: "https://j-andrews7.github.io/halfBaked/pins-board/"
+resource_files:
+  - "images/GSEA_barplot_example.png"
+  - "images/GSEA_barplot_example_direction.png"
 ---
 
 ```{r, include=FALSE}
@@ -296,6 +299,8 @@ This will create simple barplots like so:
 knitr::include_graphics("./images/GSEA_barplot_example.png")
 knitr::include_graphics("./images/GSEA_barplot_example_direction.png")
 ```
+
+# Save GSEA Results
 
 # SessionInfo
 
