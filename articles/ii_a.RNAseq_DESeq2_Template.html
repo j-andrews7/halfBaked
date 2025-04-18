@@ -131,25 +131,11 @@ processed.</p>
 <p>See <code>halfBaked::get_DESEQ2_res()</code> for more details on the
 parameters.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Generate DESeqDataSet &amp; run DESeq2. Needs integer counts, so round.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">se</span>, <span class="st">"counts"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">se</span>, <span class="st">"counts"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Design is just being set to no design here (~ 1), since we'll set it later.</span></span>
+<code class="sourceCode R"><span><span class="co"># Design is just being set to no design here (~ 1), since we'll set it later.</span></span>
 <span><span class="va">dds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DESeq2/man/DESeqDataSet.html" class="external-link">DESeqDataSet</a></span><span class="op">(</span><span class="va">se</span>, design <span class="op">=</span> <span class="op">~</span><span class="fl">1</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Remove low counts genes, adjust as necessary for smallest group.</span></span>
-<span><span class="va">smallestGroupSize</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
-<span><span class="va">keep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/MatrixGenerics/man/rowSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="fu">counts</span><span class="op">(</span><span class="va">dds</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="fl">10</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="va">smallestGroupSize</span></span>
-<span><span class="va">dds</span> <span class="op">&lt;-</span> <span class="va">dds</span><span class="op">[</span><span class="va">keep</span>, <span class="op">]</span></span>
-<span></span>
 <span><span class="va">dds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DESeq2/man/DESeq.html" class="external-link">DESeq</a></span><span class="op">(</span><span class="va">dds</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Get normalized counts and variance stabilized counts (preferred for viz).</span></span>
-<span><span class="va">vsd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DESeq2/man/vst.html" class="external-link">vst</a></span><span class="op">(</span><span class="va">dds</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">dds</span>, <span class="st">"vst"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">vsd</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">lognorm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DESeq2/man/normTransform.html" class="external-link">normTransform</a></span><span class="op">(</span><span class="va">dds</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">dds</span>, <span class="st">"lognorm"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">lognorm</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
+<span><span class="co"># To hold the results for each comparison.</span></span>
 <span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Whatever can be used as name of contrast vectors.</span></span>
@@ -160,43 +146,40 @@ parameters.</p>
 <span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_DESeq2_res.html">get_DESeq2_res</a></span><span class="op">(</span><span class="va">dds</span>, res.list <span class="op">=</span> <span class="va">res</span>, contrasts <span class="op">=</span> <span class="va">contrasts</span>, </span>
 <span>                      add.rowData <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ENSEMBL"</span>, <span class="st">"SYMBOL"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">dds.meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">dds</span><span class="op">)</span></span>
-<span><span class="va">dds.meta</span><span class="op">$</span><span class="va">DESeq2.Results</span> <span class="op">&lt;-</span> <span class="va">res</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">dds</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">dds.meta</span></span>
+<span><span class="co"># Cram DE results into SE metadata.</span></span>
+<span><span class="va">se.meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span></span>
+<span><span class="va">se.meta</span><span class="op">$</span><span class="va">DESeq2.Results</span> <span class="op">&lt;-</span> <span class="va">res</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">se.meta</span></span>
 <span></span>
 <span><span class="co"># Save all results to file if wanted.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/openxlsx/man/write.xlsx.html" class="external-link">write.xlsx</a></span><span class="op">(</span><span class="va">res</span>, file <span class="op">=</span> <span class="st">"./de/All.Comparisons.DEGs.xlsx"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">dds</span>, <span class="st">"dds.RDS"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/pkg/openxlsx/man/write.xlsx.html" class="external-link">write.xlsx</a></span><span class="op">(</span><span class="va">res</span>, file <span class="op">=</span> <span class="st">"./de/All.Comparisons.DEGs.xlsx"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="enrichmentover-representation-analyses">Enrichment/Over-representation Analyses<a class="anchor" aria-label="anchor" href="#enrichmentover-representation-analyses"></a>
 </h2>
-<p>Hypergeometric enrichment analyses are pretty standard. We use the
-<code><a href="../reference/run_enrichment.html">run_enrichment()</a></code> function to make these more convenient to
-run. This function largely uses the <code>clusterProfiler</code> package
-and spits out a boatload of figures and tables in the output
+<p>Hypergeometric enrichment analyses are pretty standard after
+differential expression.. We use the <code><a href="../reference/run_enrichment.html">run_enrichment()</a></code>
+function to make these more convenient to run. This function largely
+uses the <a href="https://yulab-smu.top/biomedical-knowledge-mining-book/enrichment-overview.html" class="external-link">clusterProfiler</a>
+package and spits out a boatload of figures and tables in the output
 directory.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Set species and database stuff for enrichments</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">species</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"human"</span>, <span class="st">"mouse"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">species</span> <span class="op">==</span> <span class="st">"human"</span><span class="op">)</span> <span class="op">{</span></span>
 <span>        <span class="va">orgdb</span> <span class="op">&lt;-</span> <span class="st">"org.Hs.eg.db"</span></span>
-<span>        <span class="va">kegg.org</span> <span class="op">&lt;-</span> <span class="st">"hsa"</span></span>
-<span>        <span class="va">react.org</span> <span class="op">&lt;-</span> <span class="st">"human"</span></span>
 <span>        <span class="va">msig.species</span> <span class="op">&lt;-</span> <span class="st">"Homo sapiens"</span></span>
 <span>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
 <span>        <span class="va">orgdb</span> <span class="op">&lt;-</span> <span class="st">"org.Mm.eg.db"</span></span>
-<span>        <span class="va">kegg.org</span> <span class="op">&lt;-</span> <span class="st">"mmu"</span></span>
-<span>        <span class="va">react.org</span> <span class="op">&lt;-</span> <span class="st">"mouse"</span></span>
 <span>        <span class="va">msig.species</span> <span class="op">&lt;-</span> <span class="st">"Mus musculus"</span></span>
 <span>    <span class="op">}</span></span>
 <span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"species parameter must be 'human' or 'mouse'"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"KEGG"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"Reactome"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"GO"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">kegg_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment2.html">run_enrichment2</a></span><span class="op">(</span><span class="va">res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"KEGG"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span><span class="va">rct_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment2.html">run_enrichment2</a></span><span class="op">(</span><span class="va">res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"Reactome"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span><span class="va">go_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment2.html">run_enrichment2</a></span><span class="op">(</span><span class="va">res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"GO"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="gsea">GSEA<a class="anchor" aria-label="anchor" href="#gsea"></a>
