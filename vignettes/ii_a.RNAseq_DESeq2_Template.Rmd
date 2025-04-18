@@ -73,25 +73,11 @@ cat(metadata(se)$description)
 See `halfBaked::get_DESEQ2_res()` for more details on the parameters.
 
 ```{r, eval = FALSE}
-# Generate DESeqDataSet & run DESeq2. Needs integer counts, so round.
-assay(se, "counts") <- round(assay(se, "counts"))
-
 # Design is just being set to no design here (~ 1), since we'll set it later.
 dds <- DESeqDataSet(se, design = ~1)
-
-# Remove low counts genes, adjust as necessary for smallest group.
-smallestGroupSize <- 2
-keep <- rowSums(counts(dds) >= 10) >= smallestGroupSize
-dds <- dds[keep, ]
-
 dds <- DESeq(dds)
 
-# Get normalized counts and variance stabilized counts (preferred for viz).
-vsd <- vst(dds)
-assay(dds, "vst") <- as.matrix(assay(vsd))
-lognorm <- normTransform(dds)
-assay(dds, "lognorm") <- as.matrix(assay(lognorm))
-
+# To hold the results for each comparison.
 res <- list()
 
 # Whatever can be used as name of contrast vectors.
@@ -102,42 +88,38 @@ contrasts <- list(
 res <- get_DESeq2_res(dds, res.list = res, contrasts = contrasts, 
                       add.rowData = c("ENSEMBL", "SYMBOL"))
 
-dds.meta <- metadata(dds)
-dds.meta$DESeq2.Results <- res
-metadata(dds) <- dds.meta
+# Cram DE results into SE metadata.
+se.meta <- metadata(se)
+se.meta$DESeq2.Results <- res
+metadata(se) <- se.meta
 
 # Save all results to file if wanted.
 write.xlsx(res, file = "./de/All.Comparisons.DEGs.xlsx", overwrite = TRUE)
-saveRDS(dds, "dds.RDS")
 ```
 
 # Enrichment/Over-representation Analyses
 
-Hypergeometric enrichment analyses are pretty standard.
+Hypergeometric enrichment analyses are pretty standard after differential expression..
 We use the `run_enrichment()` function to make these more convenient to run.
-This function largely uses the `clusterProfiler` package and spits out a boatload of figures and tables in the output directory.
+This function largely uses the [clusterProfiler](https://yulab-smu.top/biomedical-knowledge-mining-book/enrichment-overview.html) package and spits out a boatload of figures and tables in the output directory.
 
 ```{r, eval = FALSE}
 # Set species and database stuff for enrichments
 if (params$species %in% c("human", "mouse")) {
     if (params$species == "human") {
         orgdb <- "org.Hs.eg.db"
-        kegg.org <- "hsa"
-        react.org <- "human"
         msig.species <- "Homo sapiens"
     } else {
         orgdb <- "org.Mm.eg.db"
-        kegg.org <- "mmu"
-        react.org <- "mouse"
         msig.species <- "Mus musculus"
     }
 } else {
     stop("species parameter must be 'human' or 'mouse'")
 }
 
-run_enrichment(res, OrgDb = orgdb, method = "KEGG", species = params$species)
-run_enrichment(res, OrgDb = orgdb, method = "Reactome", species = params$species)
-run_enrichment(res, OrgDb = orgdb, method = "GO", species = params$species)
+kegg_res <- run_enrichment2(res, OrgDb = orgdb, method = "KEGG", species = params$species)
+rct_res <- run_enrichment2(res, OrgDb = orgdb, method = "Reactome", species = params$species)
+go_res <- run_enrichment2(res, OrgDb = orgdb, method = "GO", species = params$species)
 ```
 
 # GSEA

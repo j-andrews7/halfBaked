@@ -1,6 +1,8 @@
 library(SummarizedExperiment)
 library(readr)
 library(pins)
+library(DESeq2)
+library(edgeR)
 
 # Original FASTQs were downloaded from GEO and processed with the nf-core v3.12.0 pipeline:
 # nextflow run nf-core/rnaseq -r 3.12.0 -profile singularity -c "$BAKER_REF"/nf_configs/rnaseq.config -w /scratch_space/jandrews/"$LSB_JOBNAME" \
@@ -17,42 +19,54 @@ description <- "
   "
 
 # Load sample metadata.
-meta <- read.csv("nfcore_rnaseq.samplesheet.csv", header = TRUE, stringsAsFactors = TRUE)
+meta <- read.csv("nfcore_rnaseq.samplesheet.csv", header = TRUE,
+                 stringsAsFactors = TRUE)
 
 # Drop FASTQ file locations.
 meta <- meta[, !colnames(meta) %in% c("fastq_1", "fastq_2")]
 
-# Load counts. This object was generated using tximport via the nf-core RNA-seq pipeline on the salmon quants and
+# Load counts. This object was generated using tximport via the nf-core 
+# RNA-seq pipeline on the salmon quants and
 # is appropriate for pretty much all downstream DE packages (DESeq2, edgeR, limma).
-cts <- read.table("salmon.merged.gene_counts_length_scaled.tsv", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+cts <- read.table("salmon.merged.gene_counts_length_scaled.tsv", header = TRUE, 
+                  sep = "\t", stringsAsFactors = FALSE)
 
-# nf-core RNA-seq pipeline generates a counts table with the first two columns as gene IDs and gene symbols.
+# Counts table has first two columns as gene IDs and gene symbols.
 genes <- cts[, 1:2]
 names(genes) <- c("ENSEMBL", "SYMBOL")
 rownames(cts) <- cts[, 1]
-cts <- cts[, -c(1:2)]
-
-# Also carry along TPMs as an additional assay.
-tpms <- read.table("salmon.merged.gene_tpm.tsv", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-rownames(tpms) <- tpms[, 1]
-tpms <- tpms[, -c(1:2)]
 
 # Set metadata rownames and ensure they match count column names.
 rownames(meta) <- meta$sample
-all(rownames(meta) == colnames(cts))
+
+# Also carry along TPMs as an additional assay.
+tpms <- read.table("salmon.merged.gene_tpm.tsv", header = TRUE, 
+                   sep = "\t", stringsAsFactors = FALSE)
+rownames(tpms) <- tpms[, 1]
+tpms <- tpms[, rownames(meta)]
+
+cts <- cts[, rownames(meta)]
 
 # Create a SummarizedExperiment object.
 se <- SummarizedExperiment(
-    assays = list(
-        counts = as.matrix(cts),
-        tpm = as.matrix(tpms),
-        log2tpm = log2(as.matrix(tpms) + 1)
-    ),
+    assays = list(counts = as.matrix(cts),
+                  tpm = as.matrix(tpms),
+                  log2tpm = log2(as.matrix(tpms) + 1)),
     colData = meta,
     rowData = genes
 )
 
-# Render this notebook and add it to the metadata of the pin along with experiment metadata.
+# Limit to reasonably expressed genes, adjust design or use `group` as needed.
+design <- model.matrix(~0 + Group, data = colData(se))
+keep <- filterByExpr(se, design = design)
+se <- se[keep, ]
+
+# Add various normalized counts
+assay(se, "vst") <- vst(round(assay(se, "counts")))
+assay(se, "cpm") <- cpm(se)
+assay(se, "log2cpm") <- cpm(se, log = TRUE)
+
+# Add experiment data to metadata.
 metadata(se) <- list(description = description)
 
 # Make board and write pin to it, which will ensure it's published to the pkgdown site.
