@@ -22,7 +22,11 @@ Imports:
     gridExtra,
     dplyr,
     tibble,
-    magrittr
+    magrittr,
+    viridis,
+    data.table,
+    stringr,
+    stringi
 Remotes:
     j-andrews7/iBET
 Suggests:
