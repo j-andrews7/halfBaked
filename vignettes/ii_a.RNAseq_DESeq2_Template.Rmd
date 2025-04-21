@@ -20,8 +20,9 @@ vignette: >
   %\VignetteEncoding{UTF-8}  
 params:
   species: mouse
+  board: "your_server_info"
   pin_name: "GSE135880_SummarizedExperiment_mm10"
-  board: "https://j-andrews7.github.io/halfBaked/pins-board/"
+  pin_description: "A SummarizedExperiment containing O4+ immunopanned oligodendrocyte precursor cells (OPCs) from cortices of P5 or P6 Eed KO or control mice along with differential expression, enrichment, and GSEA results."
 resource_files:
   - "images/GSEA_barplot_example.png"
   - "images/GSEA_barplot_example_direction.png"
@@ -94,14 +95,15 @@ se.meta$DESeq2.Results <- res
 metadata(se) <- se.meta
 
 # Save all results to file if wanted.
+dir.create("./de", showWarnings = FALSE)
 write.xlsx(res, file = "./de/All.Comparisons.DEGs.xlsx", overwrite = TRUE)
 ```
 
 # Enrichment/Over-representation Analyses
 
-Hypergeometric enrichment analyses are pretty standard after differential expression..
+Hypergeometric enrichment analyses are pretty standard after differential expression.
 We use the `run_enrichment()` function to make these more convenient to run.
-This function largely uses the [clusterProfiler](https://yulab-smu.top/biomedical-knowledge-mining-book/enrichment-overview.html) package and spits out a boatload of figures and tables in the output directory.
+This function largely uses the [clusterProfiler](https://yulab-smu.top/biomedical-knowledge-mining-book/enrichment-overview.html) package.
 
 ```{r, eval = FALSE}
 # Set species and database stuff for enrichments
@@ -117,14 +119,128 @@ if (params$species %in% c("human", "mouse")) {
     stop("species parameter must be 'human' or 'mouse'")
 }
 
-kegg_res <- run_enrichment2(res, OrgDb = orgdb, method = "KEGG", species = params$species)
-rct_res <- run_enrichment2(res, OrgDb = orgdb, method = "Reactome", species = params$species)
-go_res <- run_enrichment2(res, OrgDb = orgdb, method = "GO", species = params$species)
+# Edit if you'd like
+sig_th <- 0.05
+lfc_th <- 0
+sig_col <- "padj"
+lfc_col <- "log2FoldChange"
+
+kegg_res <- list()
+rct_res <- list()
+go_res <- list()
+
+for (rez in names(res)) {
+    df <- res[[rez]]
+    
+    curr_lfc_th <- lfc_th
+    
+    # This is to handle instances where shrunken LFCs are lower than the LFC testing threshold.
+    # An annoying quirk of how/when DESeq2 applies shrinkage, just as stupid as it looks.
+    if (grepl("-shLFC0|-LFC0", rez)) { 
+        curr_lfc_th <- as.numeric(unlist(strsplit(rez, "LFC"))[2])
+    }
+    
+    bg <- df$ENSEMBL[!is.na(df[[sig_col]])]
+    
+    up_genes <- df$ENSEMBL[!is.na(df[[sig_col]]) & 
+                               df[[sig_col]] < sig_th & 
+                               df[[lfc_col]] > curr_lfc_th]
+    
+    dn_genes <- df$ENSEMBL[!is.na(df[[sig_col]]) & 
+                               df[[sig_col]] < sig_th & 
+                               df[[lfc_col]] < -curr_lfc_th]
+    
+    if (length(up_genes) > 0) {
+        kegg_res <- run_enrichment(up_genes, bg, res.name = paste0(rez, "_up"), 
+                                res.list = kegg_res, OrgDb = orgdb, method = "KEGG", species = params$species)
+        
+        rct_res <- run_enrichment(up_genes, bg, res.name = paste0(rez, "_up"),
+                               res.list = rct_res, OrgDb = orgdb, method = "Reactome", species = params$species)
+        
+        go_res <- run_enrichment(up_genes, bg, res.name = paste0(rez, "_up"),
+                              res.list = go_res, OrgDb = orgdb, method = "GO", species = params$species)
+    }
+    
+    if (length(dn_genes) > 0) {
+        kegg_res <- run_enrichment(dn_genes, bg, res.name = paste0(rez, "_dn"),
+                                res.list = kegg_res, OrgDb = orgdb, method = "KEGG", species = params$species)
+        
+        rct_res <- run_enrichment(dn_genes, bg, res.name = paste0(rez, "_dn"),
+                               res.list = rct_res, OrgDb = orgdb, method = "Reactome", species = params$species)
+        
+        go_res <- run_enrichment(dn_genes, bg, res.name = paste0(rez, "_dn"),
+                              res.list = go_res, OrgDb = orgdb, method = "GO", species = params$species)
+    }
+}
+
+full_res <- c(kegg_res, rct_res, go_res)
+
+metadata(se)$DESeq2.enrichments <- full_res
+```
+
+## Create Summary Table
+
+Individual files are for the birds.
+
+```{r, eval = FALSE}
+dir.create("./enrichments", showWarnings = FALSE)
+
+# Excel sheets can only be 31 characters, so it is necessary to shorten the names
+names(full_res) <- gsub("Reactome", "RCT", names(full_res))
+names(full_res) <- gsub("Control", "Ctl", names(full_res))
+names(full_res) <- gsub("\\.v\\.", "v", names(full_res))
+
+write.xlsx(full_res, file = "./enrichments/allresults.xlsx", overwrite = TRUE)
+```
+
+
+## Visualization
+
+A picture's worth 10000 words of AI-generated slop.
+
+```{r, eval = FALSE}
+my_theme <- theme(axis.text.y = element_text(size = 6, color ="black"),
+                  axis.text.x = element_text(color ="black"),
+                  axis.ticks = element_line(color = "black"))
+
+# Basic bar and dotplots for arbitrary top X enriched gene sets
+for (comp in names(full_res)) {
+    enr <- full_res[[comp]]
+    message(comp)
+    
+    pdf(paste0("enrichments/", comp, "_Enrichments.Top30.pdf"),
+        width = 6, height = 8)
+    print(dotplot(enr, showCategory = 30, font.size = 7) + my_theme)
+    print(dotplot(enr, size = "Count", showCategory = 30, font.size = 7) + my_theme)
+    print(barplot(enr, showCategory = 30, font.size = 7) + my_theme)
+    dev.off()
+    
+    # This collapses redundant GO terms into a single term based on a similarity cutoff.
+    # The set with the lowest p-value in each cluster is used as the label.
+    if (grepl("GO", comp)) {
+        enr <- simplify(enr)
+        
+        pdf(paste0("enrichments/", comp, "_collapsedEnrichments.Top30.pdf"),
+        width = 6, height = 8)
+        print(dotplot(enr, showCategory = 30, font.size = 7) + my_theme)
+        print(dotplot(enr, size = "Count", showCategory = 30, font.size = 7) + my_theme)
+        print(barplot(enr, showCategory = 30, font.size = 7) + my_theme)
+        dev.off()
+    }
+}
+```
+
+This will create simple dot and barplots like so:
+
+```{r, echo = FALSE, eval = TRUE, out.width = "49%", fig.show = "hold", fig.align = "center"}
+# Delete me if using as a template
+knitr::include_graphics("./images/enrichment_dotplot_example.png")
+knitr::include_graphics("./images/enrichment_barplot_example.png")
 ```
 
 # GSEA
 
-Gene set enrichment analysis (GSEA) is a pretty typical follow-up to differential expression analyses.
+Gene set enrichment analysis (GSEA) is another pretty typical follow-up to differential expression analyses.
 
 ## Load Gene Sets
 
@@ -232,6 +348,9 @@ for (i in seq_along(ranked_lists)) {
         )
     }
 }
+
+# Add to metadata of the SummarizedExperiment object
+metadata(se)$DESeq2.GSEA <- res_list
 ```
 
 ## Create Summary Table
@@ -278,11 +397,24 @@ for (res in names(res_list)) {
 This will create simple barplots like so:
 
 ```{r, echo = FALSE, eval = TRUE, out.width = "70%", fig.align = "center"}
+# Delete me if using as a template
 knitr::include_graphics("./images/GSEA_barplot_example.png")
 knitr::include_graphics("./images/GSEA_barplot_example_direction.png")
 ```
 
-# Save GSEA Results
+# Write Pin
+
+The `pin` can now be saved with the new DE, enrichment, and GSEA data included.
+
+```{r, eval = FALSE}
+# Write the pin with the new data
+board <- board_connect(server = params$board)
+pin_write(board, se, type = "rds", name = params$pin_name, title = params$pin_name, 
+          description = params$pin_description)
+
+# Can save the object locally if wanted as well.
+saveRDS(se, file = paste0("./", params$pin_name, ".RDS"))
+```
 
 # SessionInfo
 

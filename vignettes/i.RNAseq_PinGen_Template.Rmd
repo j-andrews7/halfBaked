@@ -142,7 +142,7 @@ assay(se, "cpm") <- cpm(se)
 assay(se, "log2cpm") <- cpm(se, log = TRUE)
 ```
 
-## Add Metadata to Summarized Experiment and Upload Pin
+# Add Metadata to Summarized Experiment and Upload Pin
 
 ```{r, eval = FALSE}
 # Render notebook and add to the metadata of the pin along with experiment metadata.

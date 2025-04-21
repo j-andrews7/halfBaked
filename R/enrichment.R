@@ -1,348 +1,26 @@
 #' Run Enrichment Analysis
 #'
 #' This function performs enrichment analysis using KEGG, Reactome, GO, or a custom universal method.
-#' It accepts either a list of differential expression results for group enrichment or
-#' a set of genes and background for simple enrichment.
+#' It accepts a set of genes and background genes for enrichment.
 #'
-#' @param res.list Named list of DE results data.frames for group enrichment.
-#'   If provided, `genes` and `bg` will be ignored.
-#'   Default `is NULL`.
+#' @details
+#' This function will not return results for analyses with no significant results.
+#'
 #' @param genes Character vector of gene IDs for simple enrichment.
-#'   Default `is NULL`.
+#'   Default is `NULL`.
 #' @param bg Character vector of gene IDs to be used as background for simple enrichment.
-#'   Default `is NULL`.
+#'   Default is `NULL`.
+#' @param res.name Output prefix name for results.
+#' @param TERM2GENE data.frame of two columns, the first for the term and the second for the gene ID.
+#'   Each gene in each geneset gets its own row (long format). Gene identifiers should be ENTREZID.
+#'   Required if `method` is "universal".
+#' @param res.list Named list to which enrichment results should be added.
+#'   Default is an empty list.
 #' @param method Enrichment method to use. Options are "KEGG", "Reactome", "GO", or "universal".
 #' @param species Species to use. Options are "human" or "mouse".
 #'   This determines the organism values for KEGG and Reactome.
 #' @param ont Character vector of GO ontologies to test, options include "BP", "MF", "CC", and "ALL".
 #'   Default is `c("BP", "MF", "CC", "ALL")`.
-#' @param name Output prefix name for simple enrichment if `genes` and `bg` provided.
-#' @param sig.th Significance threshold for DE genes.
-#'   Default is 0.05.
-#' @param sig.col Name of the column in the results data.frame containing significance values to use.
-#'   Default is "padj".
-#' @param lfc.th Log fold change threshold for DE genes.
-#'   Default is 0.
-#' @param lfc.col Name of the column in the results data.frame containing log2 fold change values.
-#'   Default is "log2FoldChange".
-#' @param outdir Output directory (default: "./enrichments").
-#' @param OrgDb Annotation database to use (default: "org.Hs.eg.db").
-#' @param id.col Name of gene ID column (default: "ENSEMBL").
-#' @param id.type Type of gene ID used (default: "ENSEMBL").
-#' @param ... Additional arguments passed to the enrichment functions.
-#' @return Saves enrichment results and plots to the output directory; returns invisible objects.
-#'
-#' @importFrom clusterProfiler compareCluster enrichGO enrichKEGG enricher bitr setReadable
-#'   dotplot cnetplot
-#' @importFrom enrichplot pairwise_termsim treeplot
-#' @importFrom ReactomePA enrichPathway
-#' @importFrom ggplot2 rel
-#'
-#' @export
-#'
-#' @author Jared Andrews
-run_enrichment <- function(
-    res.list = NULL,
-    genes = NULL,
-    bg = NULL,
-    method = c("KEGG", "Reactome", "GO", "universal"),
-    species = c("human", "mouse"),
-    ont = c("BP", "MF", "CC", "ALL"),
-    name = "sample",
-    sig.th = 0.05,
-    sig.col = "padj",
-    lfc.th = 0,
-    lfc.col = "log2FoldChange",
-    outdir = "./enrichments",
-    OrgDb = "org.Hs.eg.db",
-    id.col = "ENSEMBL",
-    id.type = "ENSEMBL",
-    ...) {
-    species <- match.arg(species)
-    method <- match.arg(method)
-
-    # Set organism values based on species
-    if (species == "human") {
-        kegg_org <- "hsa"
-        reactome_org <- "human"
-    } else { # species == "mouse"
-        kegg_org <- "mmu"
-        reactome_org <- "mouse"
-    }
-
-    # Cluster enrichment mode: using a list of DE results
-    if (!is.null(res.list)) {
-        for (comp in names(res.list)) {
-            message("Running enrichment for ", comp)
-
-            df <- res.list[[comp]]
-            comp_name <- comp
-            if (lfc.th != 0) comp_name <- paste0(comp_name, "-LFC", round(lfc.th, 3), "filt")
-            out_path <- file.path(outdir, comp_name)
-            dir.create(out_path, recursive = TRUE, showWarnings = FALSE)
-
-            if (id.type == "ENSEMBL") {
-                df[[id.col]] <- sapply(strsplit(as.character(df[[id.col]]), "\\."), `[`, 1)
-            }
-            df <- df[!is.na(df[[sig.col]]), ]
-
-            gene_list <- bitr(df[[id.col]], fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)
-            gene_list$FC <- df[[lfc.col]][match(gene_list[[id.col]], df[[id.col]])]
-            gl <- sort(setNames(gene_list$FC, gene_list$ENTREZID), decreasing = TRUE)
-
-            gene_clusters <- list(
-                up = df[[id.col]][df[[sig.col]] < sig.th & df[[lfc.col]] > lfc.th],
-                down = df[[id.col]][df[[sig.col]] < sig.th & df[[lfc.col]] < -lfc.th],
-                all_de = df[[id.col]][df[[sig.col]] < sig.th]
-            )
-            skip <- FALSE
-            tryCatch(
-                {
-                    gene_clusters$up <- bitr(gene_clusters$up, fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
-                    gene_clusters$down <- bitr(gene_clusters$down, fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
-                    gene_clusters$all_de <- bitr(gene_clusters$all_de, fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
-                },
-                error = function(e) {
-                    message("Error mapping IDs in ", comp_name, ": ", e)
-                    skip <<- TRUE
-                }
-            )
-            if (skip) next
-
-            bg_ids <- bitr(df[[id.col]], fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
-
-            if (method == "GO") {
-                for (ont_item in ont) {
-                    ck <- compareCluster(
-                        geneCluster = gene_clusters, fun = enrichGO,
-                        universe = bg_ids, ont = ont_item, OrgDb = OrgDb, ...
-                    )
-                    if (!is.null(ck)) {
-                        ck <- setReadable(ck, OrgDb = OrgDb, keyType = "ENTREZID")
-                        ego <- pairwise_termsim(ck)
-                        pdf(file.path(out_path, paste0("GO_", ont_item, "_Enrichments.Top20.pdf")),
-                            width = 6, height = 4 + 0.025 * length(ego@compareClusterResult$Cluster)
-                        )
-                        print(dotplot(ego, showCategory = 20, font.size = 7))
-                        print(dotplot(ego, size = "count", showCategory = 20, font.size = 7))
-                        dev.off()
-
-                        if (nrow(as.data.frame(ego)) > 2) {
-                            pdf(file.path(out_path, paste0("GO_", ont_item, "_Enrichments.termsim.Top30_Tree.pdf")),
-                                width = 17, height = 14
-                            )
-                            print(treeplot(ego,
-                                showCategory = 30, fontsize = 4,
-                                offset.params = list(
-                                    bar_tree = rel(2.5), tiplab = rel(2.5),
-                                    extend = 0.3, hexpand = 0.1
-                                ),
-                                cluster.params = list(method = "ward.D", n = min(c(6, ceiling(sqrt(nrow(ego))))), color = NULL, label_words_n = 5, label_format = 30)
-                            ))
-                            dev.off()
-                        }
-                        
-                        saveRDS(ego, file = file.path(out_path, paste0("GO_", ont_item, "_Enrichments.RDS")))
-                        write.table(as.data.frame(ego),
-                            file = file.path(out_path, paste0("GO_", ont_item, "_Enrichments.txt")),
-                            sep = "\t", row.names = FALSE, quote = FALSE
-                        )
-                    }
-                }
-            } else {
-                enrich_fun <- switch(method,
-                    KEGG = "enrichKEGG",
-                    Reactome = "enrichPathway",
-                    universal = "enricher"
-                )
-                # Set parameters for the enrichment function
-                params <- list(...)
-
-                if (method == "KEGG") {
-                    params$organism <- kegg_org
-                    params$keyType <- "kegg"
-                }
-
-                if (method == "Reactome") {
-                    params$organism <- reactome_org
-                    params$readable <- TRUE
-                }
-
-                ck <- do.call(compareCluster, c(list(
-                    geneCluster = gene_clusters,
-                    fun = enrich_fun, universe = bg_ids
-                ), params))
-
-                if (!is.null(ck)) {
-                    if (method %in% c("KEGG")) {
-                        ck <- setReadable(ck, OrgDb = OrgDb, keyType = "ENTREZID")
-                    }
-
-                    ego <- pairwise_termsim(ck)
-
-                    pdf(file.path(out_path, paste0(method, "_Enrichments.Top20.pdf")),
-                        width = 6, height = 4 + 0.015 * length(ego@compareClusterResult$Cluster)
-                    )
-                    print(dotplot(ego, showCategory = 20, font.size = 7))
-                    print(dotplot(ego, size = "count", showCategory = 20, font.size = 7))
-                    dev.off()
-
-                    if (nrow(as.data.frame(ego)) > 2) {
-                        pdf(file.path(out_path, paste0(method, "_Enrichments.termsim.Top30_Tree.pdf")),
-                            width = 17, height = 14
-                        )
-                        print(treeplot(ego,
-                            showCategory = 30, fontsize = 4,
-                            offset.params = list(
-                                bar_tree = rel(2.5), tiplab = rel(3),
-                                extend = 0.3, hexpand = 0.1
-                            ),
-                            cluster.params = list(method = "ward.D", n = min(c(6, ceiling(sqrt(nrow(ego))))), color = NULL, label_words_n = 5, label_format = 30)
-                        ))
-                        dev.off()
-                    }
-
-                    # Save results
-                    saveRDS(ego, file = file.path(out_path, paste0(method, "_Enrichments.RDS")))
-                    write.table(as.data.frame(ego),
-                        file = file.path(out_path, paste0(method, "_Enrichments.txt")),
-                        sep = "\t", row.names = FALSE, quote = FALSE
-                    )
-                }
-            }
-        }
-    } else if (!is.null(genes) && !is.null(bg)) {
-        # Simple enrichment mode
-        out_path <- file.path(outdir, name)
-        dir.create(out_path, recursive = TRUE, showWarnings = FALSE)
-
-        if (id.type == "ENSEMBL") {
-            genes <- sapply(strsplit(as.character(genes), "\\."), `[`, 1)
-            bg <- sapply(strsplit(as.character(bg), "\\."), `[`, 1)
-        }
-
-        skip <- FALSE
-
-        tryCatch(
-            {
-                genes <- bitr(genes, fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
-            },
-            error = function(e) {
-                message("Error mapping gene IDs: ", e)
-                skip <<- TRUE
-            }
-        )
-
-        if (skip) {
-            return(NULL)
-        }
-
-        bg <- bitr(bg, fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
-
-        if (method == "GO") {
-            res_list <- list()
-            for (ont_item in ont) {
-                ego <- enrichGO(genes, OrgDb = OrgDb, universe = bg, ont = ont_item, readable = TRUE, ...)
-
-                if (nrow(as.data.frame(ego)) > 0) {
-                    ego <- pairwise_termsim(ego)
-                    pdf(file.path(out_path, paste0("GO_", ont_item, ".Top30.pdf")),
-                        width = 6, height = 8
-                    )
-                    print(dotplot(ego, showCategory = 30, font.size = 7))
-                    print(barplot(ego, showCategory = 30, font.size = 7))
-                    dev.off()
-
-                    if (nrow(as.data.frame(ego)) > 2) {
-                        pdf(file.path(out_path, paste0("GO_", ont_item, ".termsim.Top30_Tree.pdf")),
-                            width = 17, height = 14
-                        )
-                        print(treeplot(ego,
-                            showCategory = 30, fontsize = 4,
-                            offset.params = list(
-                                bar_tree = rel(2.5), tiplab = rel(3),
-                                extend = 0.3, hexpand = 0.1
-                            ),
-                            cluster.params = list(method = "ward.D", n = min(c(6, ceiling(sqrt(nrow(ego))))), color = NULL, label_words_n = 5, label_format = 30)
-                        ))
-                        dev.off()
-                    }
-
-                    saveRDS(ego, file = file.path(out_path, paste0("GO_", ont_item, "_Enrichments.RDS")))
-                    write.table(as.data.frame(ego),
-                        file = file.path(out_path, paste0("GO_", ont_item, "_Enrichments.txt")),
-                        sep = "\t", row.names = FALSE, quote = FALSE
-                    )
-                    res_list[[ont_item]] <- ego
-                }
-            }
-            return(invisible(res_list))
-        } else {
-            enrich_fun <- switch(method,
-                KEGG = enrichKEGG,
-                Reactome = enrichPathway,
-                universal = enricher
-            )
-
-            params <- list(...)
-            if (method == "KEGG") params$organism <- kegg_org
-            if (method == "Reactome") params$organism <- reactome_org
-
-            ego <- do.call(enrich_fun, c(list(gene = genes, universe = bg), params))
-
-            if (nrow(as.data.frame(ego)) > 0) {
-                ego <- pairwise_termsim(ego)
-                pdf(file.path(out_path, paste0(method, ".Top30.pdf")), width = 6, height = 8)
-                print(dotplot(ego, showCategory = 30, font.size = 7))
-                print(barplot(ego, showCategory = 30, font.size = 7))
-                dev.off()
-
-                if (nrow(as.data.frame(ego)) > 2) {
-                    pdf(file.path(out_path, paste0(method, ".termsim.Top30_Tree.pdf")), width = 17, height = 14)
-                    print(treeplot(ego,
-                            showCategory = 30, fontsize = 4,
-                            offset.params = list(
-                                bar_tree = rel(2.5), tiplab = rel(3),
-                                extend = 0.3, hexpand = 0.1
-                            ),
-                            cluster.params = list(method = "ward.D", n = min(c(6, ceiling(sqrt(nrow(ego))))), color = NULL, label_words_n = 5, label_format = 30)
-                        ))
-                    dev.off()
-                }
-
-                # Save results
-                saveRDS(ego, file = file.path(out_path, paste0(method, "_Enrichments.RDS")))
-                write.table(as.data.frame(ego),
-                    file = file.path(out_path, paste0(method, "_Enrichments.txt")),
-                    sep = "\t", row.names = FALSE, quote = FALSE
-                )
-                return(invisible(ego))
-            }
-        }
-    } else {
-        stop("Provide either a 'res.list' for cluster enrichment or both 'genes' and 'bg' for simple enrichment.")
-    }
-}
-
-#' Run Enrichment Analysis
-#'
-#' This function performs enrichment analysis using KEGG, Reactome, GO, or a custom universal method.
-#' It accepts either a list of differential expression results for group enrichment or
-#' a set of genes and background for simple enrichment.
-#'
-#' @param de.list Named list of DE results data.frames for group enrichment.
-#'   If provided, `genes` and `bg` will be ignored.
-#'   Default `is NULL`.
-#' @param genes Character vector of gene IDs for simple enrichment.
-#'   Default `is NULL`.
-#' @param bg Character vector of gene IDs to be used as background for simple enrichment.
-#'   Default `is NULL`.
-#' @param method Enrichment method to use. Options are "KEGG", "Reactome", "GO", or "universal".
-#' @param species Species to use. Options are "human" or "mouse".
-#'   This determines the organism values for KEGG and Reactome.
-#' @param ont Character vector of GO ontologies to test, options include "BP", "MF", "CC", and "ALL".
-#'   Default is `c("BP", "MF", "CC", "ALL")`.
-#' @param name Output prefix name for simple enrichment if `genes` and `bg` provided.
 #' @param sig.th Significance threshold for DE genes.
 #'   Default is 0.05.
 #' @param sig.col Name of the column in the results data.frame containing significance values to use.
@@ -367,14 +45,15 @@ run_enrichment <- function(
 #' @export
 #'
 #' @author Jared Andrews
-run_enrichment2 <- function(
-    de.list = NULL,
-    genes = NULL,
-    bg = NULL,
+run_enrichment <- function(
+    genes,
+    bg,
+    res.name,
+    TERM2GENE = NULL,
+    res.list = list(),
     method = c("KEGG", "Reactome", "GO", "universal"),
     species = c("human", "mouse"),
     ont = c("BP", "MF", "CC", "ALL"),
-    name = "sample",
     sig.th = 0.05,
     sig.col = "padj",
     lfc.th = 0,
@@ -395,122 +74,144 @@ run_enrichment2 <- function(
         reactome_org <- "mouse"
     }
 
-    out_list <- list()
+    if (id.type == "ENSEMBL") {
+        genes <- sapply(strsplit(as.character(genes), "\\."), `[`, 1)
+        bg <- sapply(strsplit(as.character(bg), "\\."), `[`, 1)
+    }
 
-    # Cluster enrichment mode: using a list of DE results
-    if (!is.null(de.list)) {
-        for (comp in names(de.list)) {
-            message("Running enrichment for ", comp)
+    bg <- bitr(bg, fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
+    genes <- bitr(genes, fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
 
-            df <- de.list[[comp]]
-            comp_name <- comp
-            if (lfc.th != 0) comp_name <- paste0(comp_name, "-LFC", round(lfc.th, 3), "filt")
-
-            if (id.type == "ENSEMBL") {
-                df[[id.col]] <- sapply(strsplit(as.character(df[[id.col]]), "\\."), `[`, 1)
-            }
-            df <- df[!is.na(df[[sig.col]]), ]
-
-            gene_list <- bitr(df[[id.col]], fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)
-            gene_list$FC <- df[[lfc.col]][match(gene_list[[id.col]], df[[id.col]])]
-            gl <- sort(setNames(gene_list$FC, gene_list$ENTREZID), decreasing = TRUE)
-
-            gene_clusters <- list(
-                up = df[[id.col]][df[[sig.col]] < sig.th & df[[lfc.col]] > lfc.th],
-                down = df[[id.col]][df[[sig.col]] < sig.th & df[[lfc.col]] < -lfc.th],
-                all_de = df[[id.col]][df[[sig.col]] < sig.th]
-            )
-
-            bg_ids <- bitr(df[[id.col]], fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
-
-            if (method == "GO") {
-                for (ont_item in ont) {
-                    ck <- compareCluster(
-                        geneCluster = gene_clusters, fun = enrichGO,
-                        universe = bg_ids, ont = ont_item, OrgDb = OrgDb, ...
-                    )
-                    if (!is.null(ck)) {
-                        ck <- setReadable(ck, OrgDb = OrgDb, keyType = "ENTREZID")
-                        ego <- pairwise_termsim(ck)
-                    }
-
-                    out_list[[paste0(comp_name,"_GO", ont_item)]] <- ego
-                }
-            } else {
-                enrich_fun <- switch(method,
-                    KEGG = "enrichKEGG",
-                    Reactome = "enrichPathway",
-                    universal = "enricher"
-                )
-                # Set parameters for the enrichment function
-                params <- list(...)
-
-                if (method == "KEGG") {
-                    params$organism <- kegg_org
-                    params$keyType <- "kegg"
-                }
-
-                if (method == "Reactome") {
-                    params$organism <- reactome_org
-                    params$readable <- TRUE
-                }
-
-                ck <- do.call(compareCluster, c(list(
-                    geneCluster = gene_clusters,
-                    fun = enrich_fun, universe = bg_ids
-                ), params))
-
-                if (!is.null(ck)) {
-                    if (method %in% c("KEGG")) {
-                        ck <- setReadable(ck, OrgDb = OrgDb, keyType = "ENTREZID")
-                    }
-
-                    ego <- pairwise_termsim(ck)
-                }
-
-                out_list[[paste0(comp_name,"_GO", ont_item)]] <- ego
-            }
-        }
-    } else if (!is.null(genes) && !is.null(bg)) {
-        # Simple enrichment mode
-        if (id.type == "ENSEMBL") {
-            genes <- sapply(strsplit(as.character(genes), "\\."), `[`, 1)
-            bg <- sapply(strsplit(as.character(bg), "\\."), `[`, 1)
-        }
-
-        bg <- bitr(bg, fromType = id.type, toType = "ENTREZID", OrgDb = OrgDb)$ENTREZID
-
-        if (method == "GO") {
-            for (ont_item in ont) {
-                ego <- enrichGO(genes, OrgDb = OrgDb, universe = bg, ont = ont_item, readable = TRUE, ...)
-
-                if (nrow(as.data.frame(ego)) > 0) {
-                    ego <- pairwise_termsim(ego)
-                    out_list[[paste0(name, "_GO", ont_item)]] <- ego
-                }
-            }
-        } else {
-            enrich_fun <- switch(method,
-                KEGG = enrichKEGG,
-                Reactome = enrichPathway,
-                universal = enricher
-            )
-
-            params <- list(...)
-            if (method == "KEGG") params$organism <- kegg_org
-            if (method == "Reactome") params$organism <- reactome_org
-
-            ego <- do.call(enrich_fun, c(list(gene = genes, universe = bg), params))
+    if (method == "GO") {
+        for (ont_item in ont) {
+            ego <- enrichGO(genes, OrgDb = OrgDb, universe = bg, ont = ont_item, readable = TRUE, ...)
 
             if (nrow(as.data.frame(ego)) > 0) {
                 ego <- pairwise_termsim(ego)
-
-                out_list[[paste0(name, "_", method)]] <- ego
+                res.list[[paste0(res.name, ".GO", ont_item)]] <- ego
             }
         }
     } else {
-        stop("Provide either a 'de.list' for cluster enrichment or both 'genes' and 'bg' for simple enrichment.")
+        enrich_fun <- switch(method,
+            KEGG = enrichKEGG,
+            Reactome = enrichPathway,
+            universal = enricher
+        )
+
+        params <- list(...)
+        if (method == "KEGG") params$organism <- kegg_org
+        if (method == "Reactome") params$organism <- reactome_org
+        if (method == "universal") params$TERM2GENE <- TERM2GENE
+
+        ego <- do.call(enrich_fun, c(list(gene = genes, universe = bg), params))
+
+        if (nrow(as.data.frame(ego)) > 0) {
+            ego <- pairwise_termsim(ego)
+            res.list[[paste0(res.name, ".", method)]] <- ego
+        }
     }
 
-    out_list
+    res.list
+}
+
+
+#' Retrieve Genes Associated with GO Terms Containing a Specific Search Term
+#'
+#' This function searches for Gene Ontology (GO) Biological Process terms that contain a specified search term
+#' and retrieves all associated genes for the specified species and ID type.
+#'
+#' @param search_term A character string specifying the term to search for within GO Biological Process terms (case-insensitive).
+#' @param OrgDb The organism-specific database package to use for gene mapping.
+#'   This should be one of the organism packages like "org.Hs.eg.db", "org.Mm.eg.db", etc.
+#' @param id_type A character string specifying the type of gene identifier to return.
+#'   Options include "SYMBOL", "ENTREZID", and "ENSEMBL". Default is "SYMBOL".
+#'
+#' @return A named list containing:
+#'   - genes - A character vector of gene identifiers of the specified type associated with GO terms that contain the search term.
+#'      The names of the vector are the corresponding Entrez Gene IDs (if `id_type` is not "ENTREZID").
+#'   - go_terms - A character vector of GO terms that matched the search term.
+#'
+#' @details
+#' The function performs the following steps:
+#' \enumerate{
+#'   \item Retrieves all GO terms and their descriptions.
+#'   \item Searches for GO terms that include the specified search term.
+#'   \item Retrieves all Entrez Gene IDs associated with the matching GO terms.
+#'   \item Maps Entrez Gene IDs to the specified type of gene identifier.
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' # Retrieve human gene symbols associated with GO terms containing "WNT"
+#' genes_wnt_human <- get_genes_by_go_term("WNT", id_type = "SYMBOL")
+#' print(genes_wnt_human)
+#' }
+#' 
+#' @author Jared Andrews
+#'
+#' @export
+get_genes_by_go_term <- function(search_term, OrgDb, id_type = "SYMBOL") {
+    # Check if GO.db and AnnotationDbi packages are installed
+    for (pk in c("GO.db", "AnnotationDbi", OrgDb)) {
+        .package_check(pk)
+    }
+
+    # Get all GO terms
+    go_terms <- as.list(GO.db::GOTERM)
+
+    # Extract GO IDs and their associated terms
+    go_ids <- names(go_terms)
+    go_terms_text <- character(length(go_terms))
+
+    for (i in seq_along(go_terms)) {
+        go_terms_text[i] <- go_terms[[i]]@Term
+    }
+
+    # Search for GO terms that include the search term (case-insensitive)
+    indices <- grep(search_term, go_terms_text, ignore.case = TRUE)
+    matched_go_ids <- go_ids[indices]
+
+    # Get the names of the matched GO terms
+    matched_go_terms <- go_terms_text[indices]
+    names(matched_go_terms) <- matched_go_ids
+
+    # Retrieve genes associated with these GO IDs
+    # Construct the name of the GO to All Genes mapping object
+    suppressPackageStartupMessages(require(OrgDb, character.only = TRUE))
+    org_prefix <- sub("\\.db$", "", OrgDb) # Remove ".db" from package name
+    go2allels_name <- paste0(org_prefix, "GO2ALLEGS")
+    go2allels <- get(go2allels_name)
+
+    genes_entrez_list <- as.list(go2allels)[matched_go_ids]
+
+    # Flatten the list and remove NAs
+    genes_entrez <- unique(unlist(genes_entrez_list))
+    genes_entrez <- genes_entrez[!is.na(genes_entrez)]
+
+    # Map Entrez Gene IDs to the specified ID type
+    # Get the organism-specific database object
+    org_db <- get(OrgDb)
+
+    # Check if the requested id_type is valid
+    valid_id_types <- AnnotationDbi::columns(org_db)
+    if (!(id_type %in% valid_id_types)) {
+        stop("Invalid 'id_type'. Valid options are: ", paste(valid_id_types, collapse = ", "))
+    }
+
+    # If id_type is ENTREZID, simply return the Entrez IDs
+    if (id_type == "ENTREZID") {
+        genes_ids <- genes_entrez
+        names(genes_ids) <- genes_entrez
+    } else {
+        genes_ids <- AnnotationDbi::mapIds(
+            org_db,
+            keys = genes_entrez,
+            column = id_type,
+            keytype = "ENTREZID",
+            multiVals = "first"
+        )
+    }
+
+    list(genes = genes_ids,
+         go_terms = matched_go_terms)
 }

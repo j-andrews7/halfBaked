@@ -5,18 +5,18 @@
 \title{Run Enrichment Analysis}
 \usage{
 run_enrichment(
-  res.list = NULL,
-  genes = NULL,
-  bg = NULL,
+  genes,
+  bg,
+  res.name,
+  TERM2GENE = NULL,
+  res.list = list(),
   method = c("KEGG", "Reactome", "GO", "universal"),
   species = c("human", "mouse"),
   ont = c("BP", "MF", "CC", "ALL"),
-  name = "sample",
   sig.th = 0.05,
   sig.col = "padj",
   lfc.th = 0,
   lfc.col = "log2FoldChange",
-  outdir = "./enrichments",
   OrgDb = "org.Hs.eg.db",
   id.col = "ENSEMBL",
   id.type = "ENSEMBL",
@@ -24,15 +24,20 @@ run_enrichment(
 )
 }
 \arguments{
-\item{res.list}{Named list of DE results data.frames for group enrichment.
-If provided, \code{genes} and \code{bg} will be ignored.
-Default \verb{is NULL}.}
-
 \item{genes}{Character vector of gene IDs for simple enrichment.
-Default \verb{is NULL}.}
+Default is \code{NULL}.}
 
 \item{bg}{Character vector of gene IDs to be used as background for simple enrichment.
-Default \verb{is NULL}.}
+Default is \code{NULL}.}
+
+\item{res.name}{Output prefix name for results.}
+
+\item{TERM2GENE}{data.frame of two columns, the first for the term and the second for the gene ID.
+Each gene in each geneset gets its own row (long format). Gene identifiers should be ENTREZID.
+Required if \code{method} is "universal".}
+
+\item{res.list}{Named list to which enrichment results should be added.
+Default is an empty list.}
 
 \item{method}{Enrichment method to use. Options are "KEGG", "Reactome", "GO", or "universal".}
 
@@ -41,8 +46,6 @@ This determines the organism values for KEGG and Reactome.}
 
 \item{ont}{Character vector of GO ontologies to test, options include "BP", "MF", "CC", and "ALL".
 Default is \code{c("BP", "MF", "CC", "ALL")}.}
-
-\item{name}{Output prefix name for simple enrichment if \code{genes} and \code{bg} provided.}
 
 \item{sig.th}{Significance threshold for DE genes.
 Default is 0.05.}
@@ -56,8 +59,6 @@ Default is 0.}
 \item{lfc.col}{Name of the column in the results data.frame containing log2 fold change values.
 Default is "log2FoldChange".}
 
-\item{outdir}{Output directory (default: "./enrichments").}
-
 \item{OrgDb}{Annotation database to use (default: "org.Hs.eg.db").}
 
 \item{id.col}{Name of gene ID column (default: "ENSEMBL").}
@@ -65,14 +66,18 @@ Default is "log2FoldChange".}
 \item{id.type}{Type of gene ID used (default: "ENSEMBL").}
 
 \item{...}{Additional arguments passed to the enrichment functions.}
+
+\item{outdir}{Output directory (default: "./enrichments").}
 }
 \value{
-Saves enrichment results and plots to the output directory; returns invisible objects.
+Named list of enrichment results.
 }
 \description{
 This function performs enrichment analysis using KEGG, Reactome, GO, or a custom universal method.
-It accepts either a list of differential expression results for group enrichment or
-a set of genes and background for simple enrichment.
+It accepts a set of genes and background genes for enrichment.
+}
+\details{
+This function will not return results for analyses with no significant results.
 }
 \author{
 Jared Andrews
