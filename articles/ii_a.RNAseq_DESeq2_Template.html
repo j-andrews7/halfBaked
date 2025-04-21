@@ -211,24 +211,30 @@ package.</p>
 <span>    </span>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">up_genes</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
 <span>        <span class="va">kegg_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">up_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_up"</span><span class="op">)</span>, </span>
-<span>                                res.list <span class="op">=</span> <span class="va">kegg_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"KEGG"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span>                                res.list <span class="op">=</span> <span class="va">kegg_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
+<span>                                method <span class="op">=</span> <span class="st">"KEGG"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
 <span>        </span>
 <span>        <span class="va">rct_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">up_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_up"</span><span class="op">)</span>,</span>
-<span>                               res.list <span class="op">=</span> <span class="va">rct_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"Reactome"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span>                               res.list <span class="op">=</span> <span class="va">rct_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
+<span>                               method <span class="op">=</span> <span class="st">"Reactome"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
 <span>        </span>
 <span>        <span class="va">go_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">up_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_up"</span><span class="op">)</span>,</span>
-<span>                              res.list <span class="op">=</span> <span class="va">go_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"GO"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span>                              res.list <span class="op">=</span> <span class="va">go_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
+<span>                              method <span class="op">=</span> <span class="st">"GO"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
 <span>    <span class="op">}</span></span>
 <span>    </span>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">dn_genes</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
 <span>        <span class="va">kegg_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">dn_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_dn"</span><span class="op">)</span>,</span>
-<span>                                res.list <span class="op">=</span> <span class="va">kegg_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"KEGG"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span>                                res.list <span class="op">=</span> <span class="va">kegg_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
+<span>                                method <span class="op">=</span> <span class="st">"KEGG"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
 <span>        </span>
 <span>        <span class="va">rct_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">dn_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_dn"</span><span class="op">)</span>,</span>
-<span>                               res.list <span class="op">=</span> <span class="va">rct_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"Reactome"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span>                               res.list <span class="op">=</span> <span class="va">rct_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
+<span>                               method <span class="op">=</span> <span class="st">"Reactome"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
 <span>        </span>
 <span>        <span class="va">go_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">dn_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_dn"</span><span class="op">)</span>,</span>
-<span>                              res.list <span class="op">=</span> <span class="va">go_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, method <span class="op">=</span> <span class="st">"GO"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span>                              res.list <span class="op">=</span> <span class="va">go_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
+<span>                              method <span class="op">=</span> <span class="st">"GO"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
 <span>    <span class="op">}</span></span>
 <span><span class="op">}</span></span>
 <span></span>
@@ -250,7 +256,7 @@ package.</p>
 <span><span class="fu"><a href="https://rdrr.io/pkg/openxlsx/man/write.xlsx.html" class="external-link">write.xlsx</a></span><span class="op">(</span><span class="va">full_res</span>, file <span class="op">=</span> <span class="st">"./enrichments/allresults.xlsx"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="visualization">Visualization<a class="anchor" aria-label="anchor" href="#visualization"></a>
+<h3 id="basic-visualization">Basic Visualization<a class="anchor" aria-label="anchor" href="#basic-visualization"></a>
 </h3>
 <p>A picture’s worth 10000 words of AI-generated slop.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -284,7 +290,7 @@ package.</p>
 <span>    <span class="op">}</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>This will create simple dot and barplots like so:</p>
-<p><img src="images%2Fenrichment_dotplot_example.png" width="49%" style="display: block; margin: auto;"><img src="images%2Fenrichment_barplot_example.png" width="49%" style="display: block; margin: auto;"></p>
+<p><img src="images%2Fenrichment_dotplot_example.png" width="30%" style="display: block; margin: auto;"><img src="images%2Fenrichment_barplot_example.png" width="30%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
