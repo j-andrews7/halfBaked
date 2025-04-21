@@ -153,24 +153,30 @@ for (rez in names(res)) {
     
     if (length(up_genes) > 0) {
         kegg_res <- run_enrichment(up_genes, bg, res.name = paste0(rez, "_up"), 
-                                res.list = kegg_res, OrgDb = orgdb, method = "KEGG", species = params$species)
+                                res.list = kegg_res, OrgDb = orgdb, 
+                                method = "KEGG", species = params$species)
         
         rct_res <- run_enrichment(up_genes, bg, res.name = paste0(rez, "_up"),
-                               res.list = rct_res, OrgDb = orgdb, method = "Reactome", species = params$species)
+                               res.list = rct_res, OrgDb = orgdb, 
+                               method = "Reactome", species = params$species)
         
         go_res <- run_enrichment(up_genes, bg, res.name = paste0(rez, "_up"),
-                              res.list = go_res, OrgDb = orgdb, method = "GO", species = params$species)
+                              res.list = go_res, OrgDb = orgdb, 
+                              method = "GO", species = params$species)
     }
     
     if (length(dn_genes) > 0) {
         kegg_res <- run_enrichment(dn_genes, bg, res.name = paste0(rez, "_dn"),
-                                res.list = kegg_res, OrgDb = orgdb, method = "KEGG", species = params$species)
+                                res.list = kegg_res, OrgDb = orgdb, 
+                                method = "KEGG", species = params$species)
         
         rct_res <- run_enrichment(dn_genes, bg, res.name = paste0(rez, "_dn"),
-                               res.list = rct_res, OrgDb = orgdb, method = "Reactome", species = params$species)
+                               res.list = rct_res, OrgDb = orgdb, 
+                               method = "Reactome", species = params$species)
         
         go_res <- run_enrichment(dn_genes, bg, res.name = paste0(rez, "_dn"),
-                              res.list = go_res, OrgDb = orgdb, method = "GO", species = params$species)
+                              res.list = go_res, OrgDb = orgdb, 
+                              method = "GO", species = params$species)
     }
 }
 
@@ -195,7 +201,7 @@ write.xlsx(full_res, file = "./enrichments/allresults.xlsx", overwrite = TRUE)
 ```
 
 
-## Visualization
+## Basic Visualization
 
 A picture's worth 10000 words of AI-generated slop.
 
@@ -233,11 +239,13 @@ for (comp in names(full_res)) {
 
 This will create simple dot and barplots like so:
 
-```{r, echo = FALSE, eval = TRUE, out.width = "49%", fig.show = "hold", fig.align = "center"}
+```{r, echo = FALSE, out.width = "30%", fig.show = "hold", fig.align = "center"}
 # Delete me if using as a template
 knitr::include_graphics("./images/enrichment_dotplot_example.png")
 knitr::include_graphics("./images/enrichment_barplot_example.png")
 ```
+
+
 
 # GSEA
 

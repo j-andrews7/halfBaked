@@ -4,12 +4,12 @@
 \alias{get_genes_by_go_term}
 \title{Retrieve Genes Associated with GO Terms Containing a Specific Search Term}
 \usage{
-get_genes_by_go_term(search_term, OrgDb, id_type = "SYMBOL")
+get_genes_by_go_term(search_term, orgdb, id_type = "SYMBOL")
 }
 \arguments{
 \item{search_term}{A character string specifying the term to search for within GO Biological Process terms (case-insensitive).}
 
-\item{OrgDb}{The organism-specific database package to use for gene mapping.
+\item{orgdb}{The organism-specific database package to use for gene mapping.
 This should be one of the organism packages like "org.Hs.eg.db", "org.Mm.eg.db", etc.}
 
 \item{id_type}{A character string specifying the type of gene identifier to return.
@@ -24,12 +24,12 @@ The names of the vector are the corresponding Entrez Gene IDs (if \code{id_type}
 }
 }
 \description{
-This function searches for Gene Ontology (GO) Biological Process terms that contain a specified search term
+This function searches for Gene Ontology (GO) terms that contain a specified search term
 and retrieves all associated genes for the specified species and ID type.
 }
 \details{
 The function performs the following steps:
-\enumerate{
+\itemize{
 \item Retrieves all GO terms and their descriptions.
 \item Searches for GO terms that include the specified search term.
 \item Retrieves all Entrez Gene IDs associated with the matching GO terms.
@@ -37,11 +37,10 @@ The function performs the following steps:
 }
 }
 \examples{
-\dontrun{
 # Retrieve human gene symbols associated with GO terms containing "WNT"
-genes_wnt_human <- get_genes_by_go_term("WNT", id_type = "SYMBOL")
-print(genes_wnt_human)
-}
+genes_wnt_human <- get_genes_by_go_term("WNT", "org.Hs.eg.db", id_type = "SYMBOL")
+head(genes_wnt_human$genes)
+head(genes_wnt_human$go_terms)
 
 }
 \author{

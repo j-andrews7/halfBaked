@@ -117,11 +117,11 @@ run_enrichment <- function(
 
 #' Retrieve Genes Associated with GO Terms Containing a Specific Search Term
 #'
-#' This function searches for Gene Ontology (GO) Biological Process terms that contain a specified search term
+#' This function searches for Gene Ontology (GO) terms that contain a specified search term
 #' and retrieves all associated genes for the specified species and ID type.
 #'
 #' @param search_term A character string specifying the term to search for within GO Biological Process terms (case-insensitive).
-#' @param OrgDb The organism-specific database package to use for gene mapping.
+#' @param orgdb The organism-specific database package to use for gene mapping.
 #'   This should be one of the organism packages like "org.Hs.eg.db", "org.Mm.eg.db", etc.
 #' @param id_type A character string specifying the type of gene identifier to return.
 #'   Options include "SYMBOL", "ENTREZID", and "ENSEMBL". Default is "SYMBOL".
@@ -133,26 +133,23 @@ run_enrichment <- function(
 #'
 #' @details
 #' The function performs the following steps:
-#' \enumerate{
-#'   \item Retrieves all GO terms and their descriptions.
-#'   \item Searches for GO terms that include the specified search term.
-#'   \item Retrieves all Entrez Gene IDs associated with the matching GO terms.
-#'   \item Maps Entrez Gene IDs to the specified type of gene identifier.
-#' }
+#'   - Retrieves all GO terms and their descriptions.
+#'   - Searches for GO terms that include the specified search term.
+#'   - Retrieves all Entrez Gene IDs associated with the matching GO terms.
+#'   - Maps Entrez Gene IDs to the specified type of gene identifier.
 #'
 #' @examples
-#' \dontrun{
 #' # Retrieve human gene symbols associated with GO terms containing "WNT"
-#' genes_wnt_human <- get_genes_by_go_term("WNT", id_type = "SYMBOL")
-#' print(genes_wnt_human)
-#' }
-#' 
+#' genes_wnt_human <- get_genes_by_go_term("WNT", "org.Hs.eg.db", id_type = "SYMBOL")
+#' head(genes_wnt_human$genes)
+#' head(genes_wnt_human$go_terms)
+#'
 #' @author Jared Andrews
 #'
 #' @export
-get_genes_by_go_term <- function(search_term, OrgDb, id_type = "SYMBOL") {
+get_genes_by_go_term <- function(search_term, orgdb, id_type = "SYMBOL") {
     # Check if GO.db and AnnotationDbi packages are installed
-    for (pk in c("GO.db", "AnnotationDbi", OrgDb)) {
+    for (pk in c("GO.db", "AnnotationDbi", orgdb)) {
         .package_check(pk)
     }
 
@@ -178,7 +175,7 @@ get_genes_by_go_term <- function(search_term, OrgDb, id_type = "SYMBOL") {
     # Retrieve genes associated with these GO IDs
     # Construct the name of the GO to All Genes mapping object
     suppressPackageStartupMessages(require(OrgDb, character.only = TRUE))
-    org_prefix <- sub("\\.db$", "", OrgDb) # Remove ".db" from package name
+    org_prefix <- sub("\\.db$", "", orgdb) # Remove ".db" from package name
     go2allels_name <- paste0(org_prefix, "GO2ALLEGS")
     go2allels <- get(go2allels_name)
 
@@ -190,7 +187,7 @@ get_genes_by_go_term <- function(search_term, OrgDb, id_type = "SYMBOL") {
 
     # Map Entrez Gene IDs to the specified ID type
     # Get the organism-specific database object
-    org_db <- get(OrgDb)
+    org_db <- get(orgdb)
 
     # Check if the requested id_type is valid
     valid_id_types <- AnnotationDbi::columns(org_db)
