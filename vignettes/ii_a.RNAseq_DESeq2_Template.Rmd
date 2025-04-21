@@ -20,7 +20,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}  
 params:
   species: mouse
-  board: "your_server_info"
+  board: "https://j-andrews7.github.io/halfBaked/pins-board/"
   pin_name: "GSE135880_SummarizedExperiment_mm10"
   pin_description: "A SummarizedExperiment containing O4+ immunopanned oligodendrocyte precursor cells (OPCs) from cortices of P5 or P6 Eed KO or control mice along with differential expression, enrichment, and GSEA results."
 resource_files:
@@ -74,7 +74,8 @@ cat(metadata(se)$description)
 See `halfBaked::get_DESEQ2_res()` for more details on the parameters.
 
 ```{r, eval = FALSE}
-# Design is just being set to no design here (~ 1), since we'll set it later.
+# Design is just being set to no design here (~ 1).
+# The function will take care of setting this.
 dds <- DESeqDataSet(se, design = ~1)
 dds <- DESeq(dds)
 
