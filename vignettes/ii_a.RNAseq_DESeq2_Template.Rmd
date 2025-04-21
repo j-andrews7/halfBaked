@@ -239,12 +239,20 @@ for (comp in names(full_res)) {
 
 This will create simple dot and barplots like so:
 
-```{r, echo = FALSE, out.width = "30%", fig.show = "hold", fig.align = "center"}
+```{r, echo = FALSE, out.width = "40%", fig.show = "hold", fig.align = "center"}
 # Delete me if using as a template
 knitr::include_graphics("./images/enrichment_dotplot_example.png")
 knitr::include_graphics("./images/enrichment_barplot_example.png")
 ```
 
+## Clustering GO Terms
+
+GO terms can be very redundant, which makes coming through the results and summarizing them a headache.
+One solution to this is to cluster terms with a high degree of overlap and then summarize the cluster.
+
+```{r, eval = FALSE}
+
+```
 
 
 # GSEA

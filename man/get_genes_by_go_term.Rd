@@ -4,22 +4,24 @@
 \alias{get_genes_by_go_term}
 \title{Retrieve Genes Associated with GO Terms Containing a Specific Search Term}
 \usage{
-get_genes_by_go_term(search_term, orgdb, id_type = "SYMBOL")
+get_genes_by_go_term(search.term, orgdb, id.type = "SYMBOL")
 }
 \arguments{
-\item{search_term}{A character string specifying the term to search for within GO Biological Process terms (case-insensitive).}
+\item{search.term}{A character string specifying the term to search for within
+GO terms (case-insensitive).}
 
 \item{orgdb}{The organism-specific database package to use for gene mapping.
 This should be one of the organism packages like "org.Hs.eg.db", "org.Mm.eg.db", etc.}
 
-\item{id_type}{A character string specifying the type of gene identifier to return.
+\item{id.type}{A character string specifying the type of gene identifier to return.
 Options include "SYMBOL", "ENTREZID", and "ENSEMBL". Default is "SYMBOL".}
 }
 \value{
 A named list containing:
 \itemize{
-\item genes - A character vector of gene identifiers of the specified type associated with GO terms that contain the search term.
-The names of the vector are the corresponding Entrez Gene IDs (if \code{id_type} is not "ENTREZID").
+\item genes - A character vector of gene identifiers of the specified type
+associated with GO terms that contain the search term.
+The names of the vector are the corresponding Entrez Gene IDs (if \code{id.type} is not "ENTREZID").
 \item go_terms - A character vector of GO terms that matched the search term.
 }
 }

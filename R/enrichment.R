@@ -120,15 +120,17 @@ run_enrichment <- function(
 #' This function searches for Gene Ontology (GO) terms that contain a specified search term
 #' and retrieves all associated genes for the specified species and ID type.
 #'
-#' @param search_term A character string specifying the term to search for within GO Biological Process terms (case-insensitive).
+#' @param search.term A character string specifying the term to search for within
+#'   GO terms (case-insensitive).
 #' @param orgdb The organism-specific database package to use for gene mapping.
 #'   This should be one of the organism packages like "org.Hs.eg.db", "org.Mm.eg.db", etc.
-#' @param id_type A character string specifying the type of gene identifier to return.
+#' @param id.type A character string specifying the type of gene identifier to return.
 #'   Options include "SYMBOL", "ENTREZID", and "ENSEMBL". Default is "SYMBOL".
 #'
 #' @return A named list containing:
-#'   - genes - A character vector of gene identifiers of the specified type associated with GO terms that contain the search term.
-#'      The names of the vector are the corresponding Entrez Gene IDs (if `id_type` is not "ENTREZID").
+#'   - genes - A character vector of gene identifiers of the specified type 
+#'      associated with GO terms that contain the search term.
+#'      The names of the vector are the corresponding Entrez Gene IDs (if `id.type` is not "ENTREZID").
 #'   - go_terms - A character vector of GO terms that matched the search term.
 #'
 #' @details
@@ -147,7 +149,7 @@ run_enrichment <- function(
 #' @author Jared Andrews
 #'
 #' @export
-get_genes_by_go_term <- function(search_term, orgdb, id_type = "SYMBOL") {
+get_genes_by_go_term <- function(search.term, orgdb, id.type = "SYMBOL") {
     # Check if GO.db and AnnotationDbi packages are installed
     for (pk in c("GO.db", "AnnotationDbi", orgdb)) {
         .package_check(pk)
@@ -165,7 +167,7 @@ get_genes_by_go_term <- function(search_term, orgdb, id_type = "SYMBOL") {
     }
 
     # Search for GO terms that include the search term (case-insensitive)
-    indices <- grep(search_term, go_terms_text, ignore.case = TRUE)
+    indices <- grep(search.term, go_terms_text, ignore.case = TRUE)
     matched_go_ids <- go_ids[indices]
 
     # Get the names of the matched GO terms
@@ -191,24 +193,113 @@ get_genes_by_go_term <- function(search_term, orgdb, id_type = "SYMBOL") {
 
     # Check if the requested id_type is valid
     valid_id_types <- AnnotationDbi::columns(org_db)
-    if (!(id_type %in% valid_id_types)) {
+    if (!(id.type %in% valid_id_types)) {
         stop("Invalid 'id_type'. Valid options are: ", paste(valid_id_types, collapse = ", "))
     }
 
-    # If id_type is ENTREZID, simply return the Entrez IDs
-    if (id_type == "ENTREZID") {
+    # If id.type is ENTREZID, simply return the Entrez IDs
+    if (id.type == "ENTREZID") {
         genes_ids <- genes_entrez
         names(genes_ids) <- genes_entrez
     } else {
         genes_ids <- AnnotationDbi::mapIds(
             org_db,
             keys = genes_entrez,
-            column = id_type,
+            column = id.type,
             keytype = "ENTREZID",
             multiVals = "first"
         )
     }
 
-    list(genes = genes_ids,
-         go_terms = matched_go_terms)
+    list(
+        genes = genes_ids,
+        go_terms = matched_go_terms
+    )
+}
+
+
+#' Plot top words by frequency for reduced, clustered GO terms
+#'
+#' This function generates a barplot labeled with the most frequent words in reduced GO term clusters.
+#' This can be useful for getting the gist of affected pathways or gene sets without
+#' relying on a singular GO term chosen by uniqueness, size, or significance.
+#'
+#' @param reduced.terms A `data.frame`` containing the reduced terms and their associated scores.
+#' @param stoppers A character vector of stopwords to exclude from the terms.
+#'   Defaults to general English stopwords ("of", "the", "a" and the like).
+#'   See `stopwords(kind = "en")` for specifics.
+#' @param color Fill color of the bars.
+#'   Default is "#E69F00".
+#' @param n.top.terms An integer specifying the number most frequent terms to display per cluster.
+#'   Default is 5.
+#' @param n.top.clusters An optional integer specifying the number of top clusters to display.
+#'   If NULL, all clusters are displayed.
+#' @param perc.shift A numeric value specifying the percentage by which the color should be
+#'   darkened/lightened from one cluster to another.
+#'   Default is 0.1.
+#' @param label.font.size A numeric value specifying the font size for the labels.
+#'   Default is 5.
+#' @param xlabel A string specifying the label for the x-axis.
+#'   Default is "score".
+#'
+#' @return A ggplot object.
+#'
+#' @author Jared Andrews
+#'
+#' @importFrom ggplot2 ggplot aes geom_bar theme_classic theme scale_y_discrete
+#'   scale_fill_gradient xlab
+#' @importFrom dplyr filter rowwise mutate count group_by slice_max
+#'   summarise arrange left_join
+#' @importFrom tidytext unnest_tokens
+#' @importFrom stringr str_wrap
+#' @importFrom tm removePunctuation
+#' @importFrom magrittr %>%
+#' @export
+#'
+#' @examples
+#' plot_clustered_terms_top(reduced_terms, n_top_terms = 5, color = "blue")
+plot_clustered_terms_top <- function(reduced.terms, stoppers = c(tm::stopwords(kind = "en")),
+                                     color = "#E69F00", n.top.terms = 5,
+                                     n.top.clusters = NULL, perc_shift = 0.1,
+                                     label.font.size = 5, xlabel = "score") {
+    # Find the top n terms for each cluster
+    top_terms <- reduced_terms %>%
+        unnest_tokens(word, term, token = stringr::str_split, pattern = " ") %>%
+        filter(!word %in% stoppers) %>%
+        rowwise() %>%
+        mutate(word = removePunctuation(word, preserve_intra_word_dashes = TRUE)) %>%
+        count(cluster, word, sort = TRUE) %>%
+        group_by(cluster) %>%
+        slice_max(n, n = n_top_terms, with_ties = FALSE) %>%
+        summarise(terms = paste(word, collapse = " "))
+
+    # Merge the top terms back into the main data
+    data_with_terms <- reduced_terms %>%
+        left_join(top_terms, by = "cluster")
+
+    # Arrange data by cluster and score within cluster
+    data_with_terms <- data_with_terms %>%
+        arrange(desc(cluster), score) %>%
+        group_by(cluster) %>%
+        slice_max(score, n = 1, with_ties = FALSE)
+
+    # Limit to top N clusters by score, across groups
+    if (!is.null(n_top_clusters)) {
+        data_with_terms <- data_with_terms %>%
+            arrange(desc(score)) %>%
+            head(n = n_top_clusters)
+    }
+
+    p <- ggplot(data_with_terms, aes(y = reorder(terms, score), x = score, fill = score)) +
+        geom_bar(stat = "identity", show.legend = TRUE) +
+        theme_classic() +
+        theme(axis.text.y = element_text(size = label_font_size)) +
+        scale_y_discrete(labels = function(x) str_wrap(x, width = 50)) +
+        scale_fill_gradient(
+            low = Lighten(color, percent.change = perc_shift),
+            high = Darken(color, percent.change = perc_shift)
+        ) +
+        xlab(xlabel)
+
+    p
 }
