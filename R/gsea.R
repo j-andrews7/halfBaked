@@ -54,6 +54,8 @@ run_GSEA <- function(
     BPPARAM = NULL,
     ...) {
 
+    dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
+
     fgsea_res <- fgsea(
         pathways = sigs,
         stats = ranked.genes,

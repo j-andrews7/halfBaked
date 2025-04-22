@@ -10,7 +10,7 @@ plot_clustered_terms_top(
   color = "#E69F00",
   n.top.terms = 5,
   n.top.clusters = NULL,
-  perc_shift = 0.1,
+  perc.shift = 0.5,
   label.font.size = 5,
   xlabel = "score"
 )
@@ -31,15 +31,15 @@ Default is 5.}
 \item{n.top.clusters}{An optional integer specifying the number of top clusters to display.
 If NULL, all clusters are displayed.}
 
+\item{perc.shift}{A numeric value specifying the percentage by which the color should be
+darkened/lightened from the low to high cluster.
+Default is 0.5.}
+
 \item{label.font.size}{A numeric value specifying the font size for the labels.
 Default is 5.}
 
 \item{xlabel}{A string specifying the label for the x-axis.
 Default is "score".}
-
-\item{perc.shift}{A numeric value specifying the percentage by which the color should be
-darkened/lightened from one cluster to another.
-Default is 0.1.}
 }
 \value{
 A ggplot object.

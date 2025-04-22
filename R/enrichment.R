@@ -235,8 +235,8 @@ get_genes_by_go_term <- function(search.term, orgdb, id.type = "SYMBOL") {
 #' @param n.top.clusters An optional integer specifying the number of top clusters to display.
 #'   If NULL, all clusters are displayed.
 #' @param perc.shift A numeric value specifying the percentage by which the color should be
-#'   darkened/lightened from one cluster to another.
-#'   Default is 0.1.
+#'   darkened/lightened from the low to high cluster.
+#'   Default is 0.5.
 #' @param label.font.size A numeric value specifying the font size for the labels.
 #'   Default is 5.
 #' @param xlabel A string specifying the label for the x-axis.
@@ -254,27 +254,28 @@ get_genes_by_go_term <- function(search.term, orgdb, id.type = "SYMBOL") {
 #' @importFrom stringr str_wrap
 #' @importFrom tm removePunctuation
 #' @importFrom magrittr %>%
+#' @importFrom dittoSeq Lighten Darken
 #' @export
 #'
 #' @examples
 #' plot_clustered_terms_top(reduced_terms, n_top_terms = 5, color = "blue")
 plot_clustered_terms_top <- function(reduced.terms, stoppers = c(tm::stopwords(kind = "en")),
                                      color = "#E69F00", n.top.terms = 5,
-                                     n.top.clusters = NULL, perc_shift = 0.1,
+                                     n.top.clusters = NULL, perc.shift = 0.5,
                                      label.font.size = 5, xlabel = "score") {
     # Find the top n terms for each cluster
-    top_terms <- reduced_terms %>%
+    top_terms <- reduced.terms %>%
         unnest_tokens(word, term, token = stringr::str_split, pattern = " ") %>%
         filter(!word %in% stoppers) %>%
         rowwise() %>%
         mutate(word = removePunctuation(word, preserve_intra_word_dashes = TRUE)) %>%
         count(cluster, word, sort = TRUE) %>%
         group_by(cluster) %>%
-        slice_max(n, n = n_top_terms, with_ties = FALSE) %>%
+        slice_max(n, n = n.top.terms, with_ties = FALSE) %>%
         summarise(terms = paste(word, collapse = " "))
 
     # Merge the top terms back into the main data
-    data_with_terms <- reduced_terms %>%
+    data_with_terms <- reduced.terms %>%
         left_join(top_terms, by = "cluster")
 
     # Arrange data by cluster and score within cluster
@@ -284,20 +285,20 @@ plot_clustered_terms_top <- function(reduced.terms, stoppers = c(tm::stopwords(k
         slice_max(score, n = 1, with_ties = FALSE)
 
     # Limit to top N clusters by score, across groups
-    if (!is.null(n_top_clusters)) {
+    if (!is.null(n.top.clusters)) {
         data_with_terms <- data_with_terms %>%
             arrange(desc(score)) %>%
-            head(n = n_top_clusters)
+            head(n = n.top.clusters)
     }
 
     p <- ggplot(data_with_terms, aes(y = reorder(terms, score), x = score, fill = score)) +
         geom_bar(stat = "identity", show.legend = TRUE) +
         theme_classic() +
-        theme(axis.text.y = element_text(size = label_font_size)) +
+        theme(axis.text.y = element_text(size = label.font.size)) +
         scale_y_discrete(labels = function(x) str_wrap(x, width = 50)) +
         scale_fill_gradient(
-            low = Lighten(color, percent.change = perc_shift),
-            high = Darken(color, percent.change = perc_shift)
+            low = Lighten(color, percent.change = perc.shift),
+            high = Darken(color, percent.change = perc.shift)
         ) +
         xlab(xlabel)
 

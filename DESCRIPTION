@@ -26,7 +26,11 @@ Imports:
     viridis,
     data.table,
     stringr,
-    stringi
+    stringi,
+    dittoSeq,
+    tidytext,
+    tm,
+    magrittr
 Remotes:
     j-andrews7/iBET
 Suggests:
@@ -43,7 +47,8 @@ Suggests:
     openxlsx,
     msigdbr,
     BiocParallel,
-    rrvgo
+    rrvgo,
+    GOSemSim
 Encoding: UTF-8
 URL: https://github.com/j-andrews7/halfBaked, https://j-andrews7.github.io/halfBaked/
 VignetteBuilder: knitr
