@@ -188,7 +188,7 @@ run_GSEA <- function(
 #'
 #' @export
 #'
-#' @examples @examples
+#' @examples
 #' \dontrun{
 #' GSEA_barplot(gsea.list = my_gsea_results, outdir = "./summary", padj.th = 0.01, top = 50)
 #' }

@@ -41,7 +41,6 @@ A ggplot object.
 This function condenses GSEA results by plotting the top significant gene sets.
 }
 \examples{
-@examples
 \dontrun{
 GSEA_barplot(gsea.list = my_gsea_results, outdir = "./summary", padj.th = 0.01, top = 50)
 }
