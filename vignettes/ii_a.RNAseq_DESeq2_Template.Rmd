@@ -26,6 +26,7 @@ params:
 resource_files:
   - "images/GSEA_barplot_example.png"
   - "images/GSEA_barplot_example_direction.png"
+  - "images/GO_cluster_barplot_example.png"
 ---
 
 ```{r, include=FALSE}
@@ -259,7 +260,7 @@ for (comp in names(full_res)) {
 
 This will create simple dot and barplots like so:
 
-```{r, echo = FALSE, out.width = "40%", fig.height = "50%", fig.show = "hold", fig.align = "center"}
+```{r, echo = FALSE, out.width = "40%", out.height = "40%", fig.show = "hold", fig.align = "center"}
 # Delete me if using as a template
 knitr::include_graphics("./images/enrichment_dotplot_example.png")
 knitr::include_graphics("./images/enrichment_barplot_example.png")
@@ -444,6 +445,17 @@ metadata(se)$DESeq2.clustered_GO_enrichment <- list(
     uniqueness = clustered_res_uniqueness,
     log10_padjscore = clustered_res_log10_padjscore
 )
+```
+
+This will spit out barplots with the most frequent terms for each cluster as labels and the largest term size, uniqueness, or highest -log10(p-value) of a term as the representative score of the cluster.
+
+The p-value scoring likely makes the most sense.
+
+These plots are good for condensing many GO terms into clusters that can be meaningfully interpreted in a broad sense.
+
+```{r, echo = FALSE, eval = FALSE, out.width = "80%", fig.align = "center"}
+# Delete me if using as a template
+knitr::include_graphics("./images/GO_cluster_barplot_example.png")
 ```
 
 
