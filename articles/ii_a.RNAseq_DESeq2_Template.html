@@ -67,7 +67,7 @@ Andrews</h4>
 Hospital<br><a class="author_email" href="mailto:#"></a><a href="mailto:jared.andrews07@gmail.com" class="email">jared.andrews07@gmail.com</a>
       </address>
                   
-            <h4 data-toc-skip class="date">21 April 2025</h4>
+            <h4 data-toc-skip class="date">29 April 2025</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/j-andrews7/halfBaked/blob/devel/vignettes/ii_a.RNAseq_DESeq2_Template.Rmd" class="external-link"><code>vignettes/ii_a.RNAseq_DESeq2_Template.Rmd</code></a></small>
       <div class="d-none name"><code>ii_a.RNAseq_DESeq2_Template.Rmd</code></div>
@@ -103,6 +103,7 @@ can skip this step and load it directly.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ycphs.github.io/openxlsx/index.html" class="external-link">openxlsx</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://igordot.github.io/msigdbr/" class="external-link">msigdbr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Bioconductor/BiocParallel" class="external-link">BiocParallel</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.bioconductor.org/packages/rrvgo" class="external-link">rrvgo</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">7</span><span class="op">)</span></span>
 <span></span>
@@ -144,8 +145,10 @@ parameters.</p>
 <span>    <span class="st">"Eed_cKO.v.Control"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Group"</span>, <span class="st">"Eed_cKO"</span>, <span class="st">"Control"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_DESeq2_res.html">get_DESeq2_res</a></span><span class="op">(</span><span class="va">dds</span>, res.list <span class="op">=</span> <span class="va">res</span>, contrasts <span class="op">=</span> <span class="va">contrasts</span>, </span>
-<span>                      add.rowData <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ENSEMBL"</span>, <span class="st">"SYMBOL"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_DESeq2_res.html">get_DESeq2_res</a></span><span class="op">(</span><span class="va">dds</span>,</span>
+<span>    res.list <span class="op">=</span> <span class="va">res</span>, contrasts <span class="op">=</span> <span class="va">contrasts</span>,</span>
+<span>    add.rowData <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ENSEMBL"</span>, <span class="st">"SYMBOL"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Cram DE results into SE metadata.</span></span>
 <span><span class="va">se.meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span></span>
@@ -190,57 +193,67 @@ package.</p>
 <span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">rez</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">df</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">[[</span><span class="va">rez</span><span class="op">]</span><span class="op">]</span></span>
-<span>    </span>
+<span></span>
 <span>    <span class="va">curr_lfc_th</span> <span class="op">&lt;-</span> <span class="va">lfc_th</span></span>
-<span>    </span>
-<span>    <span class="co"># This is to handle instances where shrunken LFCs are lower than the LFC testing threshold.</span></span>
-<span>    <span class="co"># An annoying quirk of how/when DESeq2 applies shrinkage, just as stupid as it looks.</span></span>
-<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"-shLFC0|-LFC0"</span>, <span class="va">rez</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span> </span>
+<span></span>
+<span>    <span class="co"># Handle instances where shrunken LFCs are lower than the LFC testing threshold.</span></span>
+<span>    <span class="co"># An annoying quirk of DESeq2 LFC shrinkage, just as stupid as it looks.</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"-shLFC0|-LFC0"</span>, <span class="va">rez</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>        <span class="va">curr_lfc_th</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"LFC"</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
 <span>    <span class="op">}</span></span>
-<span>    </span>
+<span></span>
 <span>    <span class="va">bg</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">$</span><span class="va">ENSEMBL</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">]</span></span>
-<span>    </span>
-<span>    <span class="va">up_genes</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">$</span><span class="va">ENSEMBL</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&amp;</span> </span>
-<span>                               <span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;</span> <span class="va">sig_th</span> <span class="op">&amp;</span> </span>
-<span>                               <span class="va">df</span><span class="op">[[</span><span class="va">lfc_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&gt;</span> <span class="va">curr_lfc_th</span><span class="op">]</span></span>
-<span>    </span>
-<span>    <span class="va">dn_genes</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">$</span><span class="va">ENSEMBL</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&amp;</span> </span>
-<span>                               <span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;</span> <span class="va">sig_th</span> <span class="op">&amp;</span> </span>
-<span>                               <span class="va">df</span><span class="op">[[</span><span class="va">lfc_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;</span> <span class="op">-</span><span class="va">curr_lfc_th</span><span class="op">]</span></span>
-<span>    </span>
+<span></span>
+<span>    <span class="va">up_genes</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">$</span><span class="va">ENSEMBL</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>        <span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;</span> <span class="va">sig_th</span> <span class="op">&amp;</span></span>
+<span>        <span class="va">df</span><span class="op">[[</span><span class="va">lfc_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&gt;</span> <span class="va">curr_lfc_th</span><span class="op">]</span></span>
+<span></span>
+<span>    <span class="va">dn_genes</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">$</span><span class="va">ENSEMBL</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>        <span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;</span> <span class="va">sig_th</span> <span class="op">&amp;</span></span>
+<span>        <span class="va">df</span><span class="op">[[</span><span class="va">lfc_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;</span> <span class="op">-</span><span class="va">curr_lfc_th</span><span class="op">]</span></span>
+<span></span>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">up_genes</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>        <span class="va">kegg_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">up_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_up"</span><span class="op">)</span>, </span>
-<span>                                res.list <span class="op">=</span> <span class="va">kegg_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
-<span>                                method <span class="op">=</span> <span class="st">"KEGG"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
-<span>        </span>
-<span>        <span class="va">rct_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">up_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_up"</span><span class="op">)</span>,</span>
-<span>                               res.list <span class="op">=</span> <span class="va">rct_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
-<span>                               method <span class="op">=</span> <span class="st">"Reactome"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
-<span>        </span>
-<span>        <span class="va">go_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">up_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_up"</span><span class="op">)</span>,</span>
-<span>                              res.list <span class="op">=</span> <span class="va">go_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
-<span>                              method <span class="op">=</span> <span class="st">"GO"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span>        <span class="va">kegg_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">up_genes</span>, <span class="va">bg</span>,</span>
+<span>            res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_up"</span><span class="op">)</span>,</span>
+<span>            res.list <span class="op">=</span> <span class="va">kegg_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>,</span>
+<span>            method <span class="op">=</span> <span class="st">"KEGG"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span></span>
+<span>        <span class="op">)</span></span>
+<span></span>
+<span>        <span class="va">rct_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">up_genes</span>, <span class="va">bg</span>,</span>
+<span>            res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_up"</span><span class="op">)</span>,</span>
+<span>            res.list <span class="op">=</span> <span class="va">rct_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>,</span>
+<span>            method <span class="op">=</span> <span class="st">"Reactome"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span></span>
+<span>        <span class="op">)</span></span>
+<span></span>
+<span>        <span class="va">go_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">up_genes</span>, <span class="va">bg</span>,</span>
+<span>            res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_up"</span><span class="op">)</span>,</span>
+<span>            res.list <span class="op">=</span> <span class="va">go_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>,</span>
+<span>            method <span class="op">=</span> <span class="st">"GO"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span></span>
+<span>        <span class="op">)</span></span>
 <span>    <span class="op">}</span></span>
-<span>    </span>
+<span></span>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">dn_genes</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>        <span class="va">kegg_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">dn_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_dn"</span><span class="op">)</span>,</span>
-<span>                                res.list <span class="op">=</span> <span class="va">kegg_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
-<span>                                method <span class="op">=</span> <span class="st">"KEGG"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
-<span>        </span>
-<span>        <span class="va">rct_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">dn_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_dn"</span><span class="op">)</span>,</span>
-<span>                               res.list <span class="op">=</span> <span class="va">rct_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
-<span>                               method <span class="op">=</span> <span class="st">"Reactome"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
-<span>        </span>
-<span>        <span class="va">go_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">dn_genes</span>, <span class="va">bg</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_dn"</span><span class="op">)</span>,</span>
-<span>                              res.list <span class="op">=</span> <span class="va">go_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>, </span>
-<span>                              method <span class="op">=</span> <span class="st">"GO"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span>        <span class="va">kegg_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">dn_genes</span>, <span class="va">bg</span>,</span>
+<span>            res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_dn"</span><span class="op">)</span>,</span>
+<span>            res.list <span class="op">=</span> <span class="va">kegg_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>,</span>
+<span>            method <span class="op">=</span> <span class="st">"KEGG"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span></span>
+<span>        <span class="op">)</span></span>
+<span></span>
+<span>        <span class="va">rct_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">dn_genes</span>, <span class="va">bg</span>,</span>
+<span>            res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_dn"</span><span class="op">)</span>,</span>
+<span>            res.list <span class="op">=</span> <span class="va">rct_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>,</span>
+<span>            method <span class="op">=</span> <span class="st">"Reactome"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span></span>
+<span>        <span class="op">)</span></span>
+<span></span>
+<span>        <span class="va">go_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">dn_genes</span>, <span class="va">bg</span>,</span>
+<span>            res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"_dn"</span><span class="op">)</span>,</span>
+<span>            res.list <span class="op">=</span> <span class="va">go_res</span>, OrgDb <span class="op">=</span> <span class="va">orgdb</span>,</span>
+<span>            method <span class="op">=</span> <span class="st">"GO"</span>, species <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">species</span></span>
+<span>        <span class="op">)</span></span>
 <span>    <span class="op">}</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="va">full_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">kegg_res</span>, <span class="va">rct_res</span>, <span class="va">go_res</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span><span class="op">$</span><span class="va">DESeq2.enrichments</span> <span class="op">&lt;-</span> <span class="va">full_res</span></span></code></pre></div>
+<span><span class="va">full_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">kegg_res</span>, <span class="va">rct_res</span>, <span class="va">go_res</span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="create-summary-table">Create Summary Table<a class="anchor" aria-label="anchor" href="#create-summary-table"></a>
 </h3>
@@ -253,36 +266,43 @@ package.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">full_res</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"Control"</span>, <span class="st">"Ctl"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">full_res</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">full_res</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"\\.v\\."</span>, <span class="st">"v"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">full_res</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/openxlsx/man/write.xlsx.html" class="external-link">write.xlsx</a></span><span class="op">(</span><span class="va">full_res</span>, file <span class="op">=</span> <span class="st">"./enrichments/allresults.xlsx"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/pkg/openxlsx/man/write.xlsx.html" class="external-link">write.xlsx</a></span><span class="op">(</span><span class="va">full_res</span>, file <span class="op">=</span> <span class="st">"./enrichments/allresults.xlsx"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Save to SE object.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span><span class="op">$</span><span class="va">DESeq2.enrichments</span> <span class="op">&lt;-</span> <span class="va">full_res</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="basic-visualization">Basic Visualization<a class="anchor" aria-label="anchor" href="#basic-visualization"></a>
 </h3>
 <p>A picture’s worth 10000 words of AI-generated slop.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">my_theme</span> <span class="op">&lt;-</span> <span class="fu">theme</span><span class="op">(</span>axis.text.y <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">6</span>, color <span class="op">=</span><span class="st">"black"</span><span class="op">)</span>,</span>
-<span>                  axis.text.x <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>color <span class="op">=</span><span class="st">"black"</span><span class="op">)</span>,</span>
-<span>                  axis.ticks <span class="op">=</span> <span class="fu">element_line</span><span class="op">(</span>color <span class="op">=</span> <span class="st">"black"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">my_theme</span> <span class="op">&lt;-</span> <span class="fu">theme</span><span class="op">(</span></span>
+<span>    axis.text.y <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">6</span>, color <span class="op">=</span> <span class="st">"black"</span><span class="op">)</span>,</span>
+<span>    axis.text.x <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>color <span class="op">=</span> <span class="st">"black"</span><span class="op">)</span>,</span>
+<span>    axis.ticks <span class="op">=</span> <span class="fu">element_line</span><span class="op">(</span>color <span class="op">=</span> <span class="st">"black"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Basic bar and dotplots for arbitrary top X enriched gene sets</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">comp</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">full_res</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">enr</span> <span class="op">&lt;-</span> <span class="va">full_res</span><span class="op">[[</span><span class="va">comp</span><span class="op">]</span><span class="op">]</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="va">comp</span><span class="op">)</span></span>
-<span>    </span>
+<span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"enrichments/"</span>, <span class="va">comp</span>, <span class="st">"_Enrichments.Top30.pdf"</span><span class="op">)</span>,</span>
-<span>        width <span class="op">=</span> <span class="fl">6</span>, height <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span>
+<span>        width <span class="op">=</span> <span class="fl">6</span>, height <span class="op">=</span> <span class="fl">8</span></span>
+<span>    <span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">dotplot</span><span class="op">(</span><span class="va">enr</span>, showCategory <span class="op">=</span> <span class="fl">30</span>, font.size <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="op">+</span> <span class="va">my_theme</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">dotplot</span><span class="op">(</span><span class="va">enr</span>, size <span class="op">=</span> <span class="st">"Count"</span>, showCategory <span class="op">=</span> <span class="fl">30</span>, font.size <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="op">+</span> <span class="va">my_theme</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot</a></span><span class="op">(</span><span class="va">enr</span>, showCategory <span class="op">=</span> <span class="fl">30</span>, font.size <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="op">+</span> <span class="va">my_theme</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">dev.off</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>    </span>
-<span>    <span class="co"># This collapses redundant GO terms into a single term based on a similarity cutoff.</span></span>
+<span></span>
+<span>    <span class="co"># This collapses redundant GO terms into a single term based on similarity.</span></span>
 <span>    <span class="co"># The set with the lowest p-value in each cluster is used as the label.</span></span>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"GO"</span>, <span class="va">comp</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>        <span class="va">enr</span> <span class="op">&lt;-</span> <span class="fu">simplify</span><span class="op">(</span><span class="va">enr</span><span class="op">)</span></span>
-<span>        </span>
+<span></span>
 <span>        <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"enrichments/"</span>, <span class="va">comp</span>, <span class="st">"_collapsedEnrichments.Top30.pdf"</span><span class="op">)</span>,</span>
-<span>        width <span class="op">=</span> <span class="fl">6</span>, height <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span>
+<span>            width <span class="op">=</span> <span class="fl">6</span>, height <span class="op">=</span> <span class="fl">8</span></span>
+<span>        <span class="op">)</span></span>
 <span>        <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">dotplot</span><span class="op">(</span><span class="va">enr</span>, showCategory <span class="op">=</span> <span class="fl">30</span>, font.size <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="op">+</span> <span class="va">my_theme</span><span class="op">)</span></span>
 <span>        <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">dotplot</span><span class="op">(</span><span class="va">enr</span>, size <span class="op">=</span> <span class="st">"Count"</span>, showCategory <span class="op">=</span> <span class="fl">30</span>, font.size <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="op">+</span> <span class="va">my_theme</span><span class="op">)</span></span>
 <span>        <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot</a></span><span class="op">(</span><span class="va">enr</span>, showCategory <span class="op">=</span> <span class="fl">30</span>, font.size <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="op">+</span> <span class="va">my_theme</span><span class="op">)</span></span>
@@ -290,7 +310,196 @@ package.</p>
 <span>    <span class="op">}</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>This will create simple dot and barplots like so:</p>
-<p><img src="images%2Fenrichment_dotplot_example.png" width="30%" style="display: block; margin: auto;"><img src="images%2Fenrichment_barplot_example.png" width="30%" style="display: block; margin: auto;"></p>
+<p><img src="images/enrichment_dotplot_example.png" width="40%" height="40%" style="display: block; margin: auto;"><img src="images/enrichment_barplot_example.png" width="40%" height="40%" style="display: block; margin: auto;"></p>
+</div>
+<div class="section level3">
+<h3 id="clustering-go-terms">Clustering GO Terms<a class="anchor" aria-label="anchor" href="#clustering-go-terms"></a>
+</h3>
+<p>GO terms can be very redundant, which makes coming through the
+results and summarizing them a headache. One solution to this is to
+cluster terms with a high degree of overlap and then summarize the
+cluster.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">onts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"BP"</span>, <span class="st">"CC"</span>, <span class="st">"MF"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">up.col</span> <span class="op">&lt;-</span> <span class="st">"#56B4E9"</span></span>
+<span></span>
+<span><span class="va">gobp_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"GOBP"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">full_res</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">gomf_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"GOMF"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">full_res</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">gocc_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"GOCC"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">full_res</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">clustered_res_size</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">clustered_res_uniqueness</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">clustered_res_log10_padjscore</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">ont</span> <span class="kw">in</span> <span class="va">onts</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="co"># Get the GO terms for the current ontology</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">ont</span> <span class="op">==</span> <span class="st">"BP"</span><span class="op">)</span> <span class="op">{</span></span>
+<span>        <span class="va">curr_go</span> <span class="op">&lt;-</span> <span class="va">gobp_res</span></span>
+<span>    <span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="va">ont</span> <span class="op">==</span> <span class="st">"CC"</span><span class="op">)</span> <span class="op">{</span></span>
+<span>        <span class="va">curr_go</span> <span class="op">&lt;-</span> <span class="va">gocc_res</span></span>
+<span>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>        <span class="va">curr_go</span> <span class="op">&lt;-</span> <span class="va">gomf_res</span></span>
+<span>    <span class="op">}</span></span>
+<span></span>
+<span>    <span class="va">godat</span> <span class="op">&lt;-</span> <span class="fu">GOSemSim</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/GOSemSim/man/godata.html" class="external-link">godata</a></span><span class="op">(</span><span class="va">orgdb</span>, ont <span class="op">=</span> <span class="va">ont</span><span class="op">)</span></span>
+<span></span>
+<span>    <span class="co"># Ignore these words, alter as wanted</span></span>
+<span>    <span class="va">stoppers</span> <span class="op">&lt;-</span> <span class="fu">tm</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tm/man/stopwords.html" class="external-link">stopwords</a></span><span class="op">(</span>kind <span class="op">=</span> <span class="st">"en"</span><span class="op">)</span></span>
+<span>    <span class="va">stoppers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>        <span class="va">stoppers</span>, <span class="st">"regulation"</span>, <span class="st">"positive"</span>,</span>
+<span>        <span class="st">"negative"</span>, <span class="st">"process"</span>, <span class="st">"cell"</span>, <span class="st">"activity"</span></span>
+<span>    <span class="op">)</span></span>
+<span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">full_res</span><span class="op">)</span><span class="op">[</span><span class="va">curr_go</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span></span>
+<span>        <span class="va">enr.up</span> <span class="op">&lt;-</span> <span class="va">full_res</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span></span>
+<span></span>
+<span>        <span class="co"># Collapse similar terms, score by term size, uniqueness, or significance</span></span>
+<span>        <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">enr.up</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>            <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">enr.up</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">2</span><span class="op">)</span> <span class="op">{</span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"enrichments"</span>, <span class="st">"reduced"</span><span class="op">)</span>,</span>
+<span>                    recursive <span class="op">=</span> <span class="cn">TRUE</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>                <span class="op">)</span></span>
+<span></span>
+<span>                <span class="va">enr.up.sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/rrvgo/man/calculateSimMatrix.html" class="external-link">calculateSimMatrix</a></span><span class="op">(</span><span class="va">enr.up</span><span class="op">$</span><span class="va">ID</span>,</span>
+<span>                    orgdb <span class="op">=</span> <span class="va">orgdb</span>,</span>
+<span>                    ont <span class="op">=</span> <span class="va">ont</span>,</span>
+<span>                    semdata <span class="op">=</span> <span class="va">godat</span>,</span>
+<span>                    method <span class="op">=</span> <span class="st">"Rel"</span></span>
+<span>                <span class="op">)</span></span>
+<span></span>
+<span>                <span class="va">enr.up.scores</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log10</a></span><span class="op">(</span><span class="va">enr.up</span><span class="op">$</span><span class="va">p.adjust</span><span class="op">)</span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">enr.up.scores</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">enr.up</span><span class="op">$</span><span class="va">ID</span></span>
+<span></span>
+<span>                <span class="va">enr.up.red.size</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/rrvgo/man/reduceSimMatrix.html" class="external-link">reduceSimMatrix</a></span><span class="op">(</span><span class="va">enr.up.sim</span>,</span>
+<span>                    scores <span class="op">=</span> <span class="st">"size"</span>,</span>
+<span>                    threshold <span class="op">=</span> <span class="fl">0.7</span>, orgdb <span class="op">=</span> <span class="va">orgdb</span></span>
+<span>                <span class="op">)</span></span>
+<span></span>
+<span>                <span class="va">enr.up.red.unique</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/rrvgo/man/reduceSimMatrix.html" class="external-link">reduceSimMatrix</a></span><span class="op">(</span><span class="va">enr.up.sim</span>,</span>
+<span>                    scores <span class="op">=</span> <span class="st">"uniqueness"</span>,</span>
+<span>                    threshold <span class="op">=</span> <span class="fl">0.7</span>, orgdb <span class="op">=</span> <span class="va">orgdb</span></span>
+<span>                <span class="op">)</span></span>
+<span></span>
+<span>                <span class="va">enr.up.red.score</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/rrvgo/man/reduceSimMatrix.html" class="external-link">reduceSimMatrix</a></span><span class="op">(</span><span class="va">enr.up.sim</span>,</span>
+<span>                    scores <span class="op">=</span> <span class="va">enr.up.scores</span>,</span>
+<span>                    threshold <span class="op">=</span> <span class="fl">0.7</span>, orgdb <span class="op">=</span> <span class="va">orgdb</span></span>
+<span>                <span class="op">)</span></span>
+<span>                </span>
+<span>                <span class="va">clustered_res_size</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">enr.up.red.size</span></span>
+<span>                <span class="va">clustered_res_uniqueness</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">enr.up.red.unique</span></span>
+<span>                <span class="va">clustered_res_log10_padjscore</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">enr.up.red.score</span></span>
+<span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.table</a></span><span class="op">(</span><span class="va">enr.up.red.size</span>,</span>
+<span>                    file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
+<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".termsim.Reduced.size.0.7.txt"</span><span class="op">)</span></span>
+<span>                    <span class="op">)</span>,</span>
+<span>                    sep <span class="op">=</span> <span class="st">"\t"</span>,</span>
+<span>                    row.names <span class="op">=</span> <span class="cn">FALSE</span>, quote <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>                <span class="op">)</span></span>
+<span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.table</a></span><span class="op">(</span><span class="va">enr.up.red.unique</span>,</span>
+<span>                    file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
+<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".termsim.Reduced.uniqueness.0.7.txt"</span><span class="op">)</span></span>
+<span>                    <span class="op">)</span>,</span>
+<span>                    sep <span class="op">=</span> <span class="st">"\t"</span>,</span>
+<span>                    row.names <span class="op">=</span> <span class="cn">FALSE</span>, quote <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>                <span class="op">)</span></span>
+<span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.table</a></span><span class="op">(</span><span class="va">enr.up.red.score</span>,</span>
+<span>                    file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
+<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".termsim.Reduced.log10_padjscore.0.7.txt"</span><span class="op">)</span></span>
+<span>                    <span class="op">)</span>,</span>
+<span>                    sep <span class="op">=</span> <span class="st">"\t"</span>,</span>
+<span>                    row.names <span class="op">=</span> <span class="cn">FALSE</span>, quote <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>                <span class="op">)</span></span>
+<span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span></span>
+<span>                    <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
+<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".barplot.termsim.Reduced.size.0.7.pdf"</span><span class="op">)</span></span>
+<span>                    <span class="op">)</span>,</span>
+<span>                    width <span class="op">=</span> <span class="fl">5</span>, height <span class="op">=</span> <span class="fl">6</span></span>
+<span>                <span class="op">)</span></span>
+<span>                <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_clustered_terms_top.html">plot_clustered_terms_top</a></span><span class="op">(</span><span class="va">enr.up.red.size</span>,</span>
+<span>                    color <span class="op">=</span> <span class="va">up.col</span>,</span>
+<span>                    n.top.terms <span class="op">=</span> <span class="fl">5</span>, xlabel <span class="op">=</span> <span class="st">"term size"</span>, stoppers <span class="op">=</span> <span class="va">stoppers</span></span>
+<span>                <span class="op">)</span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span></span>
+<span>                <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_clustered_terms_top.html">plot_clustered_terms_top</a></span><span class="op">(</span><span class="va">enr.up.red.size</span>,</span>
+<span>                    color <span class="op">=</span> <span class="va">up.col</span>,</span>
+<span>                    n.top.terms <span class="op">=</span> <span class="fl">5</span>, n.top.clusters <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>                    xlabel <span class="op">=</span> <span class="st">"term size"</span>, stoppers <span class="op">=</span> <span class="va">stoppers</span></span>
+<span>                <span class="op">)</span> <span class="op">+</span></span>
+<span>                    <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"top 20 clusters by score"</span><span class="op">)</span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">dev.off</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span></span>
+<span>                    <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
+<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".barplot.termsim.Reduced.uniqueness.0.7.pdf"</span><span class="op">)</span></span>
+<span>                    <span class="op">)</span>,</span>
+<span>                    width <span class="op">=</span> <span class="fl">5</span>, height <span class="op">=</span> <span class="fl">6</span></span>
+<span>                <span class="op">)</span></span>
+<span>                <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_clustered_terms_top.html">plot_clustered_terms_top</a></span><span class="op">(</span><span class="va">enr.up.red.unique</span>,</span>
+<span>                    color <span class="op">=</span> <span class="va">up.col</span>,</span>
+<span>                    n.top.terms <span class="op">=</span> <span class="fl">5</span>, xlabel <span class="op">=</span> <span class="st">"uniqueness"</span>, stoppers <span class="op">=</span> <span class="va">stoppers</span></span>
+<span>                <span class="op">)</span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span></span>
+<span>                <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_clustered_terms_top.html">plot_clustered_terms_top</a></span><span class="op">(</span><span class="va">enr.up.red.unique</span>,</span>
+<span>                    color <span class="op">=</span> <span class="va">up.col</span>,</span>
+<span>                    n.top.terms <span class="op">=</span> <span class="fl">5</span>, n.top.clusters <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>                    xlabel <span class="op">=</span> <span class="st">"uniqueness"</span>, stoppers <span class="op">=</span> <span class="va">stoppers</span></span>
+<span>                <span class="op">)</span> <span class="op">+</span></span>
+<span>                    <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"top 20 clusters by score"</span><span class="op">)</span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">dev.off</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span></span>
+<span>                    <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
+<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".barplot.termsim.Reduced.log10padj_scores.0.7.pdf"</span><span class="op">)</span></span>
+<span>                    <span class="op">)</span>,</span>
+<span>                    width <span class="op">=</span> <span class="fl">5</span>, height <span class="op">=</span> <span class="fl">6</span></span>
+<span>                <span class="op">)</span></span>
+<span>                <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_clustered_terms_top.html">plot_clustered_terms_top</a></span><span class="op">(</span><span class="va">enr.up.red.score</span>,</span>
+<span>                    color <span class="op">=</span> <span class="va">up.col</span>,</span>
+<span>                    n.top.terms <span class="op">=</span> <span class="fl">5</span>, xlabel <span class="op">=</span> <span class="st">"-log10(adj.pval)"</span>, stoppers <span class="op">=</span> <span class="va">stoppers</span></span>
+<span>                <span class="op">)</span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span></span>
+<span>                <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_clustered_terms_top.html">plot_clustered_terms_top</a></span><span class="op">(</span><span class="va">enr.up.red.score</span>,</span>
+<span>                    color <span class="op">=</span> <span class="va">up.col</span>,</span>
+<span>                    n.top.terms <span class="op">=</span> <span class="fl">5</span>, n.top.clusters <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>                    xlabel <span class="op">=</span> <span class="st">"-log10(adj.pval)"</span>, stoppers <span class="op">=</span> <span class="va">stoppers</span></span>
+<span>                <span class="op">)</span> <span class="op">+</span></span>
+<span>                    <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"top 20 clusters by score"</span><span class="op">)</span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">dev.off</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>            <span class="op">}</span></span>
+<span>        <span class="op">}</span></span>
+<span>    <span class="op">}</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Again, tack onto SE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span><span class="op">$</span><span class="va">DESeq2.clustered_GO_enrichment</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    size <span class="op">=</span> <span class="va">clustered_res_size</span>,</span>
+<span>    uniqueness <span class="op">=</span> <span class="va">clustered_res_uniqueness</span>,</span>
+<span>    log10_padjscore <span class="op">=</span> <span class="va">clustered_res_log10_padjscore</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>This will spit out barplots with the most frequent terms for each
+cluster as labels and the largest term size, uniqueness, or highest
+-log10(p-value) of a term as the representative score of the
+cluster.</p>
+<p>The p-value scoring likely makes the most sense.</p>
+<p>These plots are good for condensing many GO terms into clusters that
+can be meaningfully interpreted in a broad sense.</p>
 </div>
 </div>
 <div class="section level2">
@@ -312,12 +521,14 @@ access to these gene sets.</p>
 first level is the gene set collection/subcollection, and the second
 level are the named vectors with the actual gene set name and
 members.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Set categories and subcategories that we want to retrieve, see msigdbr_collections()</span></span>
 <span><span class="co"># These vectors must be of equal length.</span></span>
 <span><span class="va">cats</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"H"</span>, <span class="st">"C2"</span>, <span class="st">"C2"</span>, <span class="st">"C2"</span>, <span class="st">"C3"</span>, <span class="st">"C5"</span>, <span class="st">"C5"</span>, <span class="st">"C5"</span>, <span class="st">"C5"</span>, <span class="st">"C8"</span><span class="op">)</span></span>
-<span><span class="va">subcats</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">""</span>, <span class="st">"CGP"</span>, <span class="st">"CP:KEGG"</span>, <span class="st">"CP:REACTOME"</span>, <span class="st">"TFT:GTRD"</span>, </span>
-<span>             <span class="st">"GO:MF"</span>, <span class="st">"GO:BP"</span>, <span class="st">"GO:CC"</span>, <span class="st">"HPO"</span>, <span class="st">""</span><span class="op">)</span></span>
+<span><span class="va">subcats</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">""</span>, <span class="st">"CGP"</span>, <span class="st">"CP:KEGG"</span>, <span class="st">"CP:REACTOME"</span>, <span class="st">"TFT:GTRD"</span>,</span>
+<span>    <span class="st">"GO:MF"</span>, <span class="st">"GO:BP"</span>, <span class="st">"GO:CC"</span>, <span class="st">"HPO"</span>, <span class="st">""</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">msig_lists</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -325,19 +536,19 @@ members.</p>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">cats</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">cat</span> <span class="op">&lt;-</span> <span class="va">cats</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
 <span>    <span class="va">subcat</span> <span class="op">&lt;-</span> <span class="va">subcats</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
-<span>    </span>
+<span></span>
 <span>    <span class="va">msig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://igordot.github.io/msigdbr/reference/msigdbr.html" class="external-link">msigdbr</a></span><span class="op">(</span>species <span class="op">=</span> <span class="va">msig.species</span>, category <span class="op">=</span> <span class="va">cat</span>, subcategory <span class="op">=</span> <span class="va">subcat</span><span class="op">)</span></span>
-<span>    </span>
+<span></span>
 <span>    <span class="co"># Split into a named list</span></span>
 <span>    <span class="va">msig_ls</span> <span class="op">&lt;-</span> <span class="va">msig</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/splitAsList.html" class="external-link">split</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">.</span><span class="op">$</span><span class="va">gene_symbol</span>, f <span class="op">=</span> <span class="va">.</span><span class="op">$</span><span class="va">gs_name</span><span class="op">)</span></span>
-<span>    </span>
+<span></span>
 <span>    <span class="co"># Stick in the list</span></span>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="va">subcat</span> <span class="op">==</span> <span class="st">""</span><span class="op">)</span> <span class="op">{</span></span>
 <span>        <span class="va">outname</span> <span class="op">&lt;-</span> <span class="va">cat</span></span>
 <span>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
 <span>        <span class="va">outname</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">cat</span>, <span class="st">"_"</span>, <span class="va">subcat</span><span class="op">)</span></span>
 <span>    <span class="op">}</span></span>
-<span>    </span>
+<span></span>
 <span>    <span class="va">msig_lists</span><span class="op">[[</span><span class="va">outname</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">msig_ls</span></span>
 <span><span class="op">}</span></span>
 <span></span>
@@ -353,8 +564,8 @@ members.</p>
 statistic, as it is signed and correlates with both significance and
 effect size. Some people use shrunken log2 fold changes for DESeq2
 result, but the test statistic feels more flexible.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Add as many comparisons as wanted here. </span></span>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Add as many comparisons as wanted here.</span></span>
 <span><span class="co"># Should match values in `names(dds.meta$DE.Results)`.</span></span>
 <span><span class="va">dges</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Eed_cKO.v.Control"</span><span class="op">)</span></span>
 <span></span>
@@ -377,29 +588,24 @@ result, but the test statistic feels more flexible.</p>
 <p>We’ll also loop through the gene collections to run on each
 individually.</p>
 <p>See <code><a href="../reference/run_GSEA.html">run_GSEA()</a></code> for full parameters.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># This can be deleted if not using ERCC spike-ins</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">ercc</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">res_list_spike</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
 <span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">ranked_lists</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">ranked_genes</span> <span class="op">&lt;-</span> <span class="va">ranked_lists</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span></span>
 <span>    <span class="va">ranked_name</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">ranked_lists</span><span class="op">)</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Running pre-ranked GSEA for: "</span>, <span class="va">ranked_name</span><span class="op">)</span><span class="op">)</span></span>
-<span>    </span>
+<span></span>
 <span>    <span class="co"># Loop through the gene collections</span></span>
 <span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">msig_lists</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>        <span class="va">msig_ls</span> <span class="op">&lt;-</span> <span class="va">msig_lists</span><span class="op">[[</span><span class="va">j</span><span class="op">]</span><span class="op">]</span></span>
 <span>        <span class="va">msig_name</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">msig_lists</span><span class="op">)</span><span class="op">[</span><span class="va">j</span><span class="op">]</span></span>
-<span>        </span>
+<span></span>
 <span>        <span class="co"># Remove the colon or it'll break file paths</span></span>
 <span>        <span class="va">msig_name</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">":"</span>, <span class="st">"_"</span>, <span class="va">msig_name</span><span class="op">)</span></span>
-<span>        </span>
+<span></span>
 <span>        <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Using collection: "</span>, <span class="va">msig_name</span><span class="op">)</span><span class="op">)</span></span>
-<span>        </span>
+<span></span>
 <span>        <span class="co"># Run GSEA</span></span>
 <span>        <span class="va">res_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_GSEA.html">run_GSEA</a></span><span class="op">(</span><span class="va">msig_ls</span>, <span class="va">ranked_genes</span>,</span>
 <span>            outdir <span class="op">=</span> <span class="st">"./GSEA/"</span>, res.name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">ranked_name</span>, <span class="st">"."</span>, <span class="va">msig_name</span><span class="op">)</span>,</span>
@@ -407,6 +613,9 @@ individually.</p>
 <span>        <span class="op">)</span></span>
 <span>    <span class="op">}</span></span>
 <span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Excel sheets can only be 31 chars, so it is often necessary to shorten the names</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">res_list</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"REACTOME"</span>, <span class="st">"RCT"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">res_list</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Add to metadata of the SummarizedExperiment object</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span><span class="op">$</span><span class="va">DESeq2.GSEA</span> <span class="op">&lt;-</span> <span class="va">res_list</span></span></code></pre></div>
@@ -418,11 +627,8 @@ individually.</p>
 depending on how many ranked lists are used. Ultimately, it’s pretty
 nice to have that all in a single file for easy sharing/perusal, so
 we’ll write each results table to a worksheet of an excel file.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Excel sheets can only be 31 characters, so it is sometimes necessary to shorten the names</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">res_list</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"REACTOME"</span>, <span class="st">"RCT"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">res_list</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/openxlsx/man/write.xlsx.html" class="external-link">write.xlsx</a></span><span class="op">(</span><span class="va">res_list</span>, file <span class="op">=</span> <span class="st">"./GSEA/MSigDB.allresults.xlsx"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/openxlsx/man/write.xlsx.html" class="external-link">write.xlsx</a></span><span class="op">(</span><span class="va">res_list</span>, file <span class="op">=</span> <span class="st">"./GSEA/MSigDB.allresults.xlsx"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">res_list</span>, file <span class="op">=</span> <span class="st">"./GSEA/MSigDB.allresults.RDS"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -433,27 +639,31 @@ an attempt to make the results more compact by chucking the top X
 significant gene sets into a single figure.</p>
 <p>We can do this for each element in our GSEA results list. See
 <code><a href="../reference/GSEA_barplot.html">GSEA_barplot()</a></code> for full parameters.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">res</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">res_list</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Plotting GSEA results for: "</span>, <span class="va">res</span><span class="op">)</span><span class="op">)</span></span>
-<span>    </span>
-<span>    <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/GSEA_barplot.html">GSEA_barplot</a></span><span class="op">(</span>gsea.res <span class="op">=</span> <span class="va">res_list</span><span class="op">[[</span><span class="va">res</span><span class="op">]</span><span class="op">]</span>, genesets.name <span class="op">=</span> <span class="va">res</span>,</span>
-<span>                      padj.th <span class="op">=</span> <span class="fl">0.05</span>, top <span class="op">=</span> <span class="fl">35</span><span class="op">)</span></span>
-<span>    </span>
+<span></span>
+<span>    <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/GSEA_barplot.html">GSEA_barplot</a></span><span class="op">(</span></span>
+<span>        gsea.res <span class="op">=</span> <span class="va">res_list</span><span class="op">[[</span><span class="va">res</span><span class="op">]</span><span class="op">]</span>, genesets.name <span class="op">=</span> <span class="va">res</span>,</span>
+<span>        padj.th <span class="op">=</span> <span class="fl">0.05</span>, top <span class="op">=</span> <span class="fl">35</span></span>
+<span>    <span class="op">)</span></span>
+<span></span>
 <span>    <span class="co"># Can also color by direction rather than adj. p</span></span>
-<span>    <span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/GSEA_barplot.html">GSEA_barplot</a></span><span class="op">(</span>gsea.res <span class="op">=</span> <span class="va">res_list</span><span class="op">[[</span><span class="va">res</span><span class="op">]</span><span class="op">]</span>, genesets.name <span class="op">=</span> <span class="va">res</span>, </span>
-<span>                       padj.th <span class="op">=</span> <span class="fl">0.05</span>, top <span class="op">=</span> <span class="fl">35</span>, color.by.direction <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span>    </span>
+<span>    <span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/GSEA_barplot.html">GSEA_barplot</a></span><span class="op">(</span></span>
+<span>        gsea.res <span class="op">=</span> <span class="va">res_list</span><span class="op">[[</span><span class="va">res</span><span class="op">]</span><span class="op">]</span>, genesets.name <span class="op">=</span> <span class="va">res</span>,</span>
+<span>        padj.th <span class="op">=</span> <span class="fl">0.05</span>, top <span class="op">=</span> <span class="fl">35</span>, color.by.direction <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    <span class="op">)</span></span>
+<span></span>
 <span>    <span class="co"># Dynamic height adjustment</span></span>
 <span>    <span class="va">h</span> <span class="op">&lt;-</span> <span class="fl">2</span> <span class="op">+</span> <span class="op">(</span><span class="fl">0.07</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span>
-<span>    </span>
+<span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"./GSEA/"</span>, <span class="va">res</span>, <span class="st">".GSEA_barplot.pdf"</span><span class="op">)</span>, height <span class="op">=</span> <span class="va">h</span>, width <span class="op">=</span> <span class="fl">7</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p2</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">dev.off</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>This will create simple barplots like so:</p>
-<p><img src="images%2FGSEA_barplot_example.png" width="70%" style="display: block; margin: auto;"><img src="images%2FGSEA_barplot_example_direction.png" width="70%" style="display: block; margin: auto;"></p>
+<p><img src="images/GSEA_barplot_example.png" width="70%" style="display: block; margin: auto;"><img src="images/GSEA_barplot_example_direction.png" width="70%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
@@ -461,11 +671,13 @@ significant gene sets into a single figure.</p>
 </h2>
 <p>The <code>pin</code> can now be saved with the new DE, enrichment,
 and GSEA data included.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Write the pin with the new data</span></span>
 <span><span class="va">board</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://pins.rstudio.com/reference/board_connect.html" class="external-link">board_connect</a></span><span class="op">(</span>server <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">board</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://pins.rstudio.com/reference/pin_read.html" class="external-link">pin_write</a></span><span class="op">(</span><span class="va">board</span>, <span class="va">se</span>, type <span class="op">=</span> <span class="st">"rds"</span>, name <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">pin_name</span>, title <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">pin_name</span>, </span>
-<span>          description <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">pin_description</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://pins.rstudio.com/reference/pin_read.html" class="external-link">pin_write</a></span><span class="op">(</span><span class="va">board</span>, <span class="va">se</span>,</span>
+<span>    type <span class="op">=</span> <span class="st">"rds"</span>, name <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">pin_name</span>, title <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">pin_name</span>,</span>
+<span>    description <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">pin_description</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Can save the object locally if wanted as well.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">se</span>, file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"./"</span>, <span class="va">params</span><span class="op">$</span><span class="va">pin_name</span>, <span class="st">".RDS"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -497,59 +709,92 @@ Click to expand
 <span><span class="co">## [8] base     </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## other attached packages:</span></span>
-<span><span class="co">##  [1] BiocParallel_1.42.0         msigdbr_10.0.2             </span></span>
-<span><span class="co">##  [3] openxlsx_4.2.8              pins_1.4.0                 </span></span>
-<span><span class="co">##  [5] DESeq2_1.48.0               SummarizedExperiment_1.38.0</span></span>
-<span><span class="co">##  [7] Biobase_2.68.0              MatrixGenerics_1.20.0      </span></span>
-<span><span class="co">##  [9] matrixStats_1.5.0           GenomicRanges_1.60.0       </span></span>
-<span><span class="co">## [11] GenomeInfoDb_1.44.0         IRanges_2.42.0             </span></span>
-<span><span class="co">## [13] S4Vectors_0.46.0            BiocGenerics_0.54.0        </span></span>
-<span><span class="co">## [15] generics_0.1.3              halfBaked_0.99.0.9000      </span></span>
-<span><span class="co">## [17] BiocStyle_2.36.0           </span></span>
+<span><span class="co">##  [1] rrvgo_1.20.0                BiocParallel_1.42.0        </span></span>
+<span><span class="co">##  [3] msigdbr_10.0.2              openxlsx_4.2.8             </span></span>
+<span><span class="co">##  [5] pins_1.4.0                  DESeq2_1.48.0              </span></span>
+<span><span class="co">##  [7] SummarizedExperiment_1.38.0 Biobase_2.68.0             </span></span>
+<span><span class="co">##  [9] MatrixGenerics_1.20.0       matrixStats_1.5.0          </span></span>
+<span><span class="co">## [11] GenomicRanges_1.60.0        GenomeInfoDb_1.44.0        </span></span>
+<span><span class="co">## [13] IRanges_2.42.0              S4Vectors_0.46.0           </span></span>
+<span><span class="co">## [15] BiocGenerics_0.54.0         generics_0.1.3             </span></span>
+<span><span class="co">## [17] halfBaked_0.99.0.9000       BiocStyle_2.36.0           </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## loaded via a namespace (and not attached):</span></span>
-<span><span class="co">##   [1] RColorBrewer_1.1-3      jsonlite_2.0.0          magrittr_2.0.3         </span></span>
-<span><span class="co">##   [4] ggtangle_0.0.6          farver_2.1.2            rmarkdown_2.29         </span></span>
-<span><span class="co">##   [7] fs_1.6.6                ragg_1.4.0              vctrs_0.6.5            </span></span>
-<span><span class="co">##  [10] memoise_2.0.1           ggtree_3.16.0           htmltools_0.5.8.1      </span></span>
-<span><span class="co">##  [13] S4Arrays_1.8.0          curl_6.2.2              SparseArray_1.8.0      </span></span>
-<span><span class="co">##  [16] gridGraphics_0.5-1      sass_0.4.10             bslib_0.9.0            </span></span>
-<span><span class="co">##  [19] desc_1.4.3              plyr_1.8.9              cachem_1.1.0           </span></span>
-<span><span class="co">##  [22] igraph_2.1.4            lifecycle_1.0.4         pkgconfig_2.0.3        </span></span>
-<span><span class="co">##  [25] gson_0.1.0              Matrix_1.7-3            R6_2.6.1               </span></span>
-<span><span class="co">##  [28] fastmap_1.2.0           GenomeInfoDbData_1.2.14 digest_0.6.37          </span></span>
-<span><span class="co">##  [31] aplot_0.2.5             enrichplot_1.28.0       colorspace_2.1-1       </span></span>
-<span><span class="co">##  [34] patchwork_1.3.0         AnnotationDbi_1.70.0    textshaping_1.0.0      </span></span>
-<span><span class="co">##  [37] RSQLite_2.3.9           httr_1.4.7              polyclip_1.10-7        </span></span>
-<span><span class="co">##  [40] abind_1.4-8             compiler_4.5.0          bit64_4.6.0-1          </span></span>
-<span><span class="co">##  [43] withr_3.0.2             graphite_1.54.0         viridis_0.6.5          </span></span>
-<span><span class="co">##  [46] DBI_1.2.3               ggforce_0.4.2           R.utils_2.13.0         </span></span>
-<span><span class="co">##  [49] MASS_7.3-65             rappdirs_0.3.3          DelayedArray_0.34.1    </span></span>
-<span><span class="co">##  [52] tools_4.5.0             ape_5.8-1               zip_2.3.2              </span></span>
-<span><span class="co">##  [55] R.oo_1.27.0             glue_1.8.0              nlme_3.1-168           </span></span>
-<span><span class="co">##  [58] GOSemSim_2.34.0         grid_4.5.0              reshape2_1.4.4         </span></span>
-<span><span class="co">##  [61] fgsea_1.34.0            gtable_0.3.6            R.methodsS3_1.8.2      </span></span>
-<span><span class="co">##  [64] tidyr_1.3.1             data.table_1.17.0       tidygraph_1.3.1        </span></span>
-<span><span class="co">##  [67] XVector_0.48.0          ggrepel_0.9.6           pillar_1.10.2          </span></span>
-<span><span class="co">##  [70] stringr_1.5.1           babelgene_22.9          yulab.utils_0.2.0      </span></span>
-<span><span class="co">##  [73] splines_4.5.0           dplyr_1.1.4             tweenr_2.0.3           </span></span>
-<span><span class="co">##  [76] treeio_1.32.0           lattice_0.22-6          bit_4.6.0              </span></span>
-<span><span class="co">##  [79] tidyselect_1.2.1        GO.db_3.21.0            locfit_1.5-9.12        </span></span>
-<span><span class="co">##  [82] Biostrings_2.76.0       reactome.db_1.92.0      knitr_1.50             </span></span>
-<span><span class="co">##  [85] gridExtra_2.3           bookdown_0.43           xfun_0.52              </span></span>
-<span><span class="co">##  [88] graphlayouts_1.2.2      stringi_1.8.7           UCSC.utils_1.4.0       </span></span>
-<span><span class="co">##  [91] lazyeval_0.2.2          ggfun_0.1.8             yaml_2.3.10            </span></span>
-<span><span class="co">##  [94] ReactomePA_1.52.0       evaluate_1.0.3          codetools_0.2-20       </span></span>
-<span><span class="co">##  [97] ggraph_2.2.1            tibble_3.2.1            qvalue_2.40.0          </span></span>
-<span><span class="co">## [100] graph_1.86.0            BiocManager_1.30.25     ggplotify_0.1.2        </span></span>
-<span><span class="co">## [103] cli_3.6.4               systemfonts_1.2.2       munsell_0.5.1          </span></span>
-<span><span class="co">## [106] jquerylib_0.1.4         Rcpp_1.0.14             png_0.1-8              </span></span>
-<span><span class="co">## [109] parallel_4.5.0          assertthat_0.2.1        pkgdown_2.1.1          </span></span>
-<span><span class="co">## [112] ggplot2_3.5.2           blob_1.2.4              clusterProfiler_4.16.0 </span></span>
-<span><span class="co">## [115] DOSE_4.2.0              viridisLite_0.4.2       tidytree_0.4.6         </span></span>
-<span><span class="co">## [118] scales_1.3.0            purrr_1.0.4             crayon_1.5.3           </span></span>
-<span><span class="co">## [121] rlang_1.1.6             cowplot_1.1.3           fastmatch_1.1-6        </span></span>
-<span><span class="co">## [124] KEGGREST_1.48.0</span></span></code></pre>
+<span><span class="co">##   [1] splines_4.5.0               later_1.4.2                </span></span>
+<span><span class="co">##   [3] ggplotify_0.1.2             tibble_3.2.1               </span></span>
+<span><span class="co">##   [5] R.oo_1.27.0                 polyclip_1.10-7            </span></span>
+<span><span class="co">##   [7] graph_1.86.0                lifecycle_1.0.4            </span></span>
+<span><span class="co">##   [9] NLP_0.3-2                   lattice_0.22-6             </span></span>
+<span><span class="co">##  [11] MASS_7.3-65                 SnowballC_0.7.1            </span></span>
+<span><span class="co">##  [13] magrittr_2.0.3              sass_0.4.10                </span></span>
+<span><span class="co">##  [15] rmarkdown_2.29              jquerylib_0.1.4            </span></span>
+<span><span class="co">##  [17] yaml_2.3.10                 httpuv_1.6.16              </span></span>
+<span><span class="co">##  [19] ggtangle_0.0.6              askpass_1.2.1              </span></span>
+<span><span class="co">##  [21] zip_2.3.2                   reticulate_1.42.0          </span></span>
+<span><span class="co">##  [23] cowplot_1.1.3               DBI_1.2.3                  </span></span>
+<span><span class="co">##  [25] RColorBrewer_1.1-3          abind_1.4-8                </span></span>
+<span><span class="co">##  [27] purrr_1.0.4                 R.utils_2.13.0             </span></span>
+<span><span class="co">##  [29] ggraph_2.2.1                yulab.utils_0.2.0          </span></span>
+<span><span class="co">##  [31] tweenr_2.0.3                rappdirs_0.3.3             </span></span>
+<span><span class="co">##  [33] GenomeInfoDbData_1.2.14     enrichplot_1.28.0          </span></span>
+<span><span class="co">##  [35] tm_0.7-16                   ggrepel_0.9.6              </span></span>
+<span><span class="co">##  [37] tokenizers_0.3.0            tidytree_0.4.6             </span></span>
+<span><span class="co">##  [39] reactome.db_1.92.0          pheatmap_1.0.12            </span></span>
+<span><span class="co">##  [41] umap_0.2.10.0               RSpectra_0.16-2            </span></span>
+<span><span class="co">##  [43] pkgdown_2.1.2               codetools_0.2-20           </span></span>
+<span><span class="co">##  [45] DelayedArray_0.34.1         DOSE_4.2.0                 </span></span>
+<span><span class="co">##  [47] xml2_1.3.8                  ggforce_0.4.2              </span></span>
+<span><span class="co">##  [49] tidyselect_1.2.1            aplot_0.2.5                </span></span>
+<span><span class="co">##  [51] UCSC.utils_1.4.0            farver_2.1.2               </span></span>
+<span><span class="co">##  [53] viridis_0.6.5               jsonlite_2.0.0             </span></span>
+<span><span class="co">##  [55] tidygraph_1.3.1             ggridges_0.5.6             </span></span>
+<span><span class="co">##  [57] systemfonts_1.2.2           tools_4.5.0                </span></span>
+<span><span class="co">##  [59] treeio_1.32.0               ragg_1.4.0                 </span></span>
+<span><span class="co">##  [61] Rcpp_1.0.14                 glue_1.8.0                 </span></span>
+<span><span class="co">##  [63] gridExtra_2.3               SparseArray_1.8.0          </span></span>
+<span><span class="co">##  [65] xfun_0.52                   qvalue_2.40.0              </span></span>
+<span><span class="co">##  [67] dplyr_1.1.4                 withr_3.0.2                </span></span>
+<span><span class="co">##  [69] BiocManager_1.30.25         fastmap_1.2.0              </span></span>
+<span><span class="co">##  [71] openssl_2.3.2               digest_0.6.37              </span></span>
+<span><span class="co">##  [73] R6_2.6.1                    mime_0.13                  </span></span>
+<span><span class="co">##  [75] gridGraphics_0.5-1          textshaping_1.0.0          </span></span>
+<span><span class="co">##  [77] colorspace_2.1-1            GO.db_3.21.0               </span></span>
+<span><span class="co">##  [79] RSQLite_2.3.9               R.methodsS3_1.8.2          </span></span>
+<span><span class="co">##  [81] tidyr_1.3.1                 data.table_1.17.0          </span></span>
+<span><span class="co">##  [83] graphlayouts_1.2.2          httr_1.4.7                 </span></span>
+<span><span class="co">##  [85] S4Arrays_1.8.0              graphite_1.54.0            </span></span>
+<span><span class="co">##  [87] pkgconfig_2.0.3             gtable_0.3.6               </span></span>
+<span><span class="co">##  [89] blob_1.2.4                  SingleCellExperiment_1.30.0</span></span>
+<span><span class="co">##  [91] XVector_0.48.0              clusterProfiler_4.16.0     </span></span>
+<span><span class="co">##  [93] janeaustenr_1.0.0           htmltools_0.5.8.1          </span></span>
+<span><span class="co">##  [95] bookdown_0.43               fgsea_1.34.0               </span></span>
+<span><span class="co">##  [97] scales_1.4.0                png_0.1-8                  </span></span>
+<span><span class="co">##  [99] wordcloud_2.6               ggfun_0.1.8                </span></span>
+<span><span class="co">## [101] knitr_1.50                  reshape2_1.4.4             </span></span>
+<span><span class="co">## [103] curl_6.2.2                  nlme_3.1-168               </span></span>
+<span><span class="co">## [105] cachem_1.1.0                stringr_1.5.1              </span></span>
+<span><span class="co">## [107] parallel_4.5.0              AnnotationDbi_1.70.0       </span></span>
+<span><span class="co">## [109] treemap_2.4-4               desc_1.4.3                 </span></span>
+<span><span class="co">## [111] ReactomePA_1.52.0           pillar_1.10.2              </span></span>
+<span><span class="co">## [113] grid_4.5.0                  vctrs_0.6.5                </span></span>
+<span><span class="co">## [115] slam_0.1-55                 promises_1.3.2             </span></span>
+<span><span class="co">## [117] dittoSeq_1.20.0             xtable_1.8-4               </span></span>
+<span><span class="co">## [119] evaluate_1.0.3              cli_3.6.5                  </span></span>
+<span><span class="co">## [121] locfit_1.5-9.12             compiler_4.5.0             </span></span>
+<span><span class="co">## [123] rlang_1.1.6                 crayon_1.5.3               </span></span>
+<span><span class="co">## [125] tidytext_0.4.2              plyr_1.8.9                 </span></span>
+<span><span class="co">## [127] fs_1.6.6                    stringi_1.8.7              </span></span>
+<span><span class="co">## [129] viridisLite_0.4.2           gridBase_0.4-7             </span></span>
+<span><span class="co">## [131] assertthat_0.2.1            babelgene_22.9             </span></span>
+<span><span class="co">## [133] Biostrings_2.76.0           lazyeval_0.2.2             </span></span>
+<span><span class="co">## [135] GOSemSim_2.34.0             Matrix_1.7-3               </span></span>
+<span><span class="co">## [137] patchwork_1.3.0             bit64_4.6.0-1              </span></span>
+<span><span class="co">## [139] ggplot2_3.5.2               KEGGREST_1.48.0            </span></span>
+<span><span class="co">## [141] shiny_1.10.0                igraph_2.1.4               </span></span>
+<span><span class="co">## [143] memoise_2.0.1               bslib_0.9.0                </span></span>
+<span><span class="co">## [145] ggtree_3.16.0               fastmatch_1.1-6            </span></span>
+<span><span class="co">## [147] bit_4.6.0                   ape_5.8-1                  </span></span>
+<span><span class="co">## [149] gson_0.1.0</span></span></code></pre>
 </details>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -563,7 +808,7 @@ Click to expand
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
 </div>
 
     </footer>

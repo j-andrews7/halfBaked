@@ -48,15 +48,16 @@ and retrieves all associated genes for the specified species and ID type.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_genes_by_go_term</span><span class="op">(</span><span class="va">search_term</span>, <span class="va">orgdb</span>, id_type <span class="op">=</span> <span class="st">"SYMBOL"</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_genes_by_go_term</span><span class="op">(</span><span class="va">search.term</span>, <span class="va">orgdb</span>, id.type <span class="op">=</span> <span class="st">"SYMBOL"</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-search-term">search_term<a class="anchor" aria-label="anchor" href="#arg-search-term"></a></dt>
-<dd><p>A character string specifying the term to search for within GO Biological Process terms (case-insensitive).</p></dd>
+<dl><dt id="arg-search-term">search.term<a class="anchor" aria-label="anchor" href="#arg-search-term"></a></dt>
+<dd><p>A character string specifying the term to search for within
+GO terms (case-insensitive).</p></dd>
 
 
 <dt id="arg-orgdb">orgdb<a class="anchor" aria-label="anchor" href="#arg-orgdb"></a></dt>
@@ -64,15 +65,16 @@ and retrieves all associated genes for the specified species and ID type.</p>
 This should be one of the organism packages like "org.Hs.eg.db", "org.Mm.eg.db", etc.</p></dd>
 
 
-<dt id="arg-id-type">id_type<a class="anchor" aria-label="anchor" href="#arg-id-type"></a></dt>
+<dt id="arg-id-type">id.type<a class="anchor" aria-label="anchor" href="#arg-id-type"></a></dt>
 <dd><p>A character string specifying the type of gene identifier to return.
 Options include "SYMBOL", "ENTREZID", and "ENSEMBL". Default is "SYMBOL".</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A named list containing:</p><ul><li><p>genes - A character vector of gene identifiers of the specified type associated with GO terms that contain the search term.
-The names of the vector are the corresponding Entrez Gene IDs (if <code>id_type</code> is not "ENTREZID").</p></li>
+    <p>A named list containing:</p><ul><li><p>genes - A character vector of gene identifiers of the specified type
+associated with GO terms that contain the search term.
+The names of the vector are the corresponding Entrez Gene IDs (if <code>id.type</code> is not "ENTREZID").</p></li>
 <li><p>go_terms - A character vector of GO terms that matched the search term.</p></li>
 </ul></div>
     <div class="section level2">
@@ -91,11 +93,7 @@ The names of the vector are the corresponding Entrez Gene IDs (if <code>id_type<
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Retrieve human gene symbols associated with GO terms containing "WNT"</span></span></span>
 <span class="r-in"><span><span class="va">genes_wnt_human</span> <span class="op">&lt;-</span> <span class="fu">get_genes_by_go_term</span><span class="op">(</span><span class="st">"WNT"</span>, <span class="st">"org.Hs.eg.db"</span>, id_type <span class="op">=</span> <span class="st">"SYMBOL"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Loading required package: GO.db</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Loading required package: AnnotationDbi</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Loading required package: org.Hs.eg.db</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>there is no package called ‘org.Hs.eg.db’</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in .package_check(pk):</span> Package org.Hs.eg.db is not installed, but you are attempting to use functionality provided by it. Please install it first.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in get_genes_by_go_term("WNT", "org.Hs.eg.db", id_type = "SYMBOL"):</span> unused argument (id_type = "SYMBOL")</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">genes_wnt_human</span><span class="op">$</span><span class="va">genes</span><span class="op">)</span></span></span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'x' in selecting a method for function 'head': object 'genes_wnt_human' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">genes_wnt_human</span><span class="op">$</span><span class="va">go_terms</span><span class="op">)</span></span></span>
@@ -112,7 +110,7 @@ The names of the vector are the corresponding Entrez Gene IDs (if <code>id_type<
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
 </div>
 
     </footer></div>
