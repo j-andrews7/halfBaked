@@ -26,7 +26,7 @@ params:
 resource_files:
   - "images/GSEA_barplot_example.png"
   - "images/GSEA_barplot_example_direction.png"
-  - "images/GO_cluster_barplot_example.png"
+  - "images/GO_cluster_terms_example.png"
 ---
 
 ```{r, include=FALSE}
@@ -455,7 +455,7 @@ These plots are good for condensing many GO terms into clusters that can be mean
 
 ```{r, echo = FALSE, eval = FALSE, out.width = "80%", fig.align = "center"}
 # Delete me if using as a template
-knitr::include_graphics("./images/GO_cluster_barplot_example.png")
+knitr::include_graphics("./images/GO_cluster_terms_example.png")
 ```
 
 

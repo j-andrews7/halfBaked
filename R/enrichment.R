@@ -241,13 +241,14 @@ get_genes_by_go_term <- function(search.term, orgdb, id.type = "SYMBOL") {
 #'   Default is 5.
 #' @param xlabel A string specifying the label for the x-axis.
 #'   Default is "score".
+#' @param ylabel A string specifying the label for the y-axis.
 #'
 #' @return A ggplot object.
 #'
 #' @author Jared Andrews
 #'
 #' @importFrom ggplot2 ggplot aes geom_bar theme_classic theme scale_y_discrete
-#'   scale_fill_gradient xlab
+#'   scale_fill_gradient xlab ylab
 #' @importFrom dplyr filter rowwise mutate count group_by slice_max
 #'   summarise arrange left_join
 #' @importFrom tidytext unnest_tokens
@@ -262,7 +263,7 @@ get_genes_by_go_term <- function(search.term, orgdb, id.type = "SYMBOL") {
 plot_clustered_terms_top <- function(reduced.terms, stoppers = c(tm::stopwords(kind = "en")),
                                      color = "#E69F00", n.top.terms = 5,
                                      n.top.clusters = NULL, perc.shift = 0.5,
-                                     label.font.size = 5, xlabel = "score") {
+                                     label.font.size = 5, xlabel = "score", ylabel = NULL) {
     # Find the top n terms for each cluster
     top_terms <- reduced.terms %>%
         unnest_tokens(word, term, token = stringr::str_split, pattern = " ") %>%
@@ -300,7 +301,7 @@ plot_clustered_terms_top <- function(reduced.terms, stoppers = c(tm::stopwords(k
             low = Lighten(color, percent.change = perc.shift),
             high = Darken(color, percent.change = perc.shift)
         ) +
-        xlab(xlabel)
+        xlab(xlabel) + ylab(ylabel)
 
     p
 }

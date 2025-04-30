@@ -12,7 +12,8 @@ plot_clustered_terms_top(
   n.top.clusters = NULL,
   perc.shift = 0.5,
   label.font.size = 5,
-  xlabel = "score"
+  xlabel = "score",
+  ylabel = NULL
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ Default is 5.}
 
 \item{xlabel}{A string specifying the label for the x-axis.
 Default is "score".}
+
+\item{ylabel}{A string specifying the label for the y-axis.}
 }
 \value{
 A ggplot object.
