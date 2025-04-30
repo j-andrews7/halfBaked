@@ -349,7 +349,7 @@ names(res_list) <- gsub("REACTOME", "RCT", names(res_list))
 metadata(se)$DESeq2.GSEA <- res_list
 
 # Write to pin.
-board <- board_folder(here::here("pkgdown/assets/pins-board"))
+board <- board_folder("../pkgdown/assets/pins-board")
 pin_write(
     board = board,
     x = se,
