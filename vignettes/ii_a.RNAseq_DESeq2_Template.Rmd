@@ -453,7 +453,7 @@ The p-value scoring likely makes the most sense.
 
 These plots are good for condensing many GO terms into clusters that can be meaningfully interpreted in a broad sense.
 
-```{r, echo = FALSE, eval = FALSE, out.width = "80%", fig.align = "center"}
+```{r, echo = FALSE, eval = TRUE, out.width = "80%", fig.align = "center"}
 # Delete me if using as a template
 knitr::include_graphics("./images/GO_cluster_terms_example.png")
 ```
