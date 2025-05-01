@@ -70,8 +70,8 @@ Hospital<br><a class="author_email" href="mailto:#"></a><a href="mailto:jared.an
                   
             <h4 data-toc-skip class="date">1 May 2025</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/j-andrews7/halfBaked/blob/devel/vignettes/ii_a.RNAseq_DESeq2_Template.Rmd" class="external-link"><code>vignettes/ii_a.RNAseq_DESeq2_Template.Rmd</code></a></small>
-      <div class="d-none name"><code>ii_a.RNAseq_DESeq2_Template.Rmd</code></div>
+      <small class="dont-index">Source: <a href="https://github.com/j-andrews7/halfBaked/blob/devel/vignettes/ii_b.RNAseq_edgeR_Template.Rmd" class="external-link"><code>vignettes/ii_b.RNAseq_edgeR_Template.Rmd</code></a></small>
+      <div class="d-none name"><code>ii_b.RNAseq_edgeR_Template.Rmd</code></div>
     </div>
 
     
@@ -80,10 +80,10 @@ Hospital<br><a class="author_email" href="mailto:#"></a><a href="mailto:jared.an
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
 <p>This is an example template for running a typical differential
-expression analysis using <a href="https://bioconductor.org/packages/release/bioc/html/DESeq2.html" class="external-link">DESeq2</a>
+expression analysis using <a href="https://bioconductor.org/packages/release/bioc/html/edgeR.html" class="external-link">edgeR</a>
 via <a href="https://j-andrews7.github.io/halfBaked/">halfBaked</a>. It
 is meant to be a starting point for your own analysis and is not a
-comprehensive guide to all the options available in DESeq2 or
+comprehensive guide to all the options available in edgeR or
 halfBaked.</p>
 </div>
 <div class="section level2">
@@ -98,7 +98,6 @@ that you want to use.</p>
 can skip this step and load it directly.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/j-andrews7/halfBaked" class="external-link">halfBaked</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/thelovelab/DESeq2" class="external-link">DESeq2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bioconductor.org/packages/SummarizedExperiment" class="external-link">SummarizedExperiment</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pins.rstudio.com/" class="external-link">pins</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ycphs.github.io/openxlsx/index.html" class="external-link">openxlsx</a></span><span class="op">)</span></span>
@@ -128,17 +127,12 @@ publication</a> for more details.</p>
 processed.</p>
 </div>
 <div class="section level2">
-<h2 id="run-differential-expression-via-deseq2">Run Differential Expression via DESeq2<a class="anchor" aria-label="anchor" href="#run-differential-expression-via-deseq2"></a>
+<h2 id="run-differential-expression-via-edger">Run Differential Expression via edgeR<a class="anchor" aria-label="anchor" href="#run-differential-expression-via-edger"></a>
 </h2>
-<p>See <code>halfBaked::get_DESEQ2_res()</code> for more details on the
+<p>See <code><a href="../reference/get_edgeR_res.html">halfBaked::get_edgeR_res()</a></code> for more details on the
 parameters.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Design is just being set to no design here (~ 1).</span></span>
-<span><span class="co"># The function will take care of setting this.</span></span>
-<span><span class="va">dds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DESeq2/man/DESeqDataSet.html" class="external-link">DESeqDataSet</a></span><span class="op">(</span><span class="va">se</span>, design <span class="op">=</span> <span class="op">~</span><span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">dds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DESeq2/man/DESeq.html" class="external-link">DESeq</a></span><span class="op">(</span><span class="va">dds</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># To hold the results for each comparison.</span></span>
+<code class="sourceCode R"><span><span class="co"># To hold the results for each comparison.</span></span>
 <span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Whatever can be used as name of contrast vectors.</span></span>
@@ -146,19 +140,18 @@ parameters.</p>
 <span>    <span class="st">"Eed_cKO.v.Control"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Group"</span>, <span class="st">"Eed_cKO"</span>, <span class="st">"Control"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_DESeq2_res.html">get_DESeq2_res</a></span><span class="op">(</span><span class="va">dds</span>,</span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_edgeR_res.html">get_edgeR_res</a></span><span class="op">(</span><span class="va">dds</span>,</span>
 <span>    res.list <span class="op">=</span> <span class="va">res</span>, contrasts <span class="op">=</span> <span class="va">contrasts</span>,</span>
-<span>    add.rowData <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ENSEMBL"</span>, <span class="st">"SYMBOL"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Cram DE results into SE metadata.</span></span>
 <span><span class="va">se.meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span></span>
-<span><span class="va">se.meta</span><span class="op">$</span><span class="va">DESeq2.Results</span> <span class="op">&lt;-</span> <span class="va">res</span></span>
+<span><span class="va">se.meta</span><span class="op">$</span><span class="va">edgeR.Results</span> <span class="op">&lt;-</span> <span class="va">res</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">se.meta</span></span>
 <span></span>
 <span><span class="co"># Save all results to file if wanted.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="st">"./de"</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/openxlsx/man/write.xlsx.html" class="external-link">write.xlsx</a></span><span class="op">(</span><span class="va">res</span>, file <span class="op">=</span> <span class="st">"./de/All.Comparisons.DEGs.DESeq2.xlsx"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/pkg/openxlsx/man/write.xlsx.html" class="external-link">write.xlsx</a></span><span class="op">(</span><span class="va">res</span>, file <span class="op">=</span> <span class="st">"./de/All.Comparisons.DEGs.edgeR.xlsx"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="enrichmentover-representation-analyses">Enrichment/Over-representation Analyses<a class="anchor" aria-label="anchor" href="#enrichmentover-representation-analyses"></a>
@@ -182,36 +175,28 @@ package.</p>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"species parameter must be 'human' or 'mouse'"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="co"># Edit if you'd like</span></span>
+<span><span class="co"># Edit if you'd like, don't recommend post-hoc LFC thresholding</span></span>
 <span><span class="va">sig_th</span> <span class="op">&lt;-</span> <span class="fl">0.05</span></span>
 <span><span class="va">lfc_th</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
-<span><span class="va">sig_col</span> <span class="op">&lt;-</span> <span class="st">"padj"</span></span>
-<span><span class="va">lfc_col</span> <span class="op">&lt;-</span> <span class="st">"log2FoldChange"</span></span>
+<span><span class="va">sig_col</span> <span class="op">&lt;-</span> <span class="st">"FDR"</span></span>
+<span><span class="va">lfc_col</span> <span class="op">&lt;-</span> <span class="st">"logFC"</span></span>
 <span></span>
 <span><span class="va">kegg_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">rct_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">go_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">rez</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">df</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">[[</span><span class="va">rez</span><span class="op">]</span><span class="op">]</span></span>
-<span></span>
-<span>    <span class="va">curr_lfc_th</span> <span class="op">&lt;-</span> <span class="va">lfc_th</span></span>
-<span></span>
-<span>    <span class="co"># Handle instances where shrunken LFCs are lower than the LFC testing threshold.</span></span>
-<span>    <span class="co"># An annoying quirk of DESeq2 LFC shrinkage, just as stupid as it looks.</span></span>
-<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"-shLFC0|-LFC0"</span>, <span class="va">rez</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>        <span class="va">curr_lfc_th</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">rez</span>, <span class="st">"LFC"</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
-<span>    <span class="op">}</span></span>
+<span>    <span class="va">df</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">[[</span><span class="va">rez</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">table</span></span>
 <span></span>
 <span>    <span class="va">bg</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">$</span><span class="va">ENSEMBL</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">]</span></span>
 <span></span>
 <span>    <span class="va">up_genes</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">$</span><span class="va">ENSEMBL</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>        <span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;</span> <span class="va">sig_th</span> <span class="op">&amp;</span></span>
-<span>        <span class="va">df</span><span class="op">[[</span><span class="va">lfc_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&gt;</span> <span class="va">curr_lfc_th</span><span class="op">]</span></span>
+<span>        <span class="va">df</span><span class="op">[[</span><span class="va">lfc_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&gt;</span> <span class="va">lfc_th</span><span class="op">]</span></span>
 <span></span>
 <span>    <span class="va">dn_genes</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">$</span><span class="va">ENSEMBL</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>        <span class="va">df</span><span class="op">[[</span><span class="va">sig_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;</span> <span class="va">sig_th</span> <span class="op">&amp;</span></span>
-<span>        <span class="va">df</span><span class="op">[[</span><span class="va">lfc_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;</span> <span class="op">-</span><span class="va">curr_lfc_th</span><span class="op">]</span></span>
+<span>        <span class="va">df</span><span class="op">[[</span><span class="va">lfc_col</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;</span> <span class="op">-</span><span class="va">lfc_th</span><span class="op">]</span></span>
 <span></span>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">up_genes</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
 <span>        <span class="va">kegg_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_enrichment.html">run_enrichment</a></span><span class="op">(</span><span class="va">up_genes</span>, <span class="va">bg</span>,</span>
@@ -260,7 +245,7 @@ package.</p>
 </h3>
 <p>Individual files are for the birds.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="st">"./enrichments"</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="st">"./enrichments_edgeR"</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Excel sheets can only be 31 characters, so it is necessary to shorten the names</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">full_res</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"Reactome"</span>, <span class="st">"RCT"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">full_res</span><span class="op">)</span><span class="op">)</span></span>
@@ -270,7 +255,7 @@ package.</p>
 <span><span class="fu"><a href="https://rdrr.io/pkg/openxlsx/man/write.xlsx.html" class="external-link">write.xlsx</a></span><span class="op">(</span><span class="va">full_res</span>, file <span class="op">=</span> <span class="st">"./enrichments/allresults.xlsx"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Save to SE object.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span><span class="op">$</span><span class="va">DESeq2.enrichments</span> <span class="op">&lt;-</span> <span class="va">full_res</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span><span class="op">$</span><span class="va">edgeR.enrichments</span> <span class="op">&lt;-</span> <span class="va">full_res</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="basic-visualization">Basic Visualization<a class="anchor" aria-label="anchor" href="#basic-visualization"></a>
@@ -288,7 +273,7 @@ package.</p>
 <span>    <span class="va">enr</span> <span class="op">&lt;-</span> <span class="va">full_res</span><span class="op">[[</span><span class="va">comp</span><span class="op">]</span><span class="op">]</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="va">comp</span><span class="op">)</span></span>
 <span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"enrichments/"</span>, <span class="va">comp</span>, <span class="st">"_Enrichments.Top30.pdf"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"./enrichments_edgeR/"</span>, <span class="va">comp</span>, <span class="st">"_Enrichments.Top30.pdf"</span><span class="op">)</span>,</span>
 <span>        width <span class="op">=</span> <span class="fl">6</span>, height <span class="op">=</span> <span class="fl">8</span></span>
 <span>    <span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">dotplot</span><span class="op">(</span><span class="va">enr</span>, showCategory <span class="op">=</span> <span class="fl">30</span>, font.size <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="op">+</span> <span class="va">my_theme</span><span class="op">)</span></span>
@@ -301,7 +286,7 @@ package.</p>
 <span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"GO"</span>, <span class="va">comp</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>        <span class="va">enr</span> <span class="op">&lt;-</span> <span class="fu">simplify</span><span class="op">(</span><span class="va">enr</span><span class="op">)</span></span>
 <span></span>
-<span>        <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"enrichments/"</span>, <span class="va">comp</span>, <span class="st">"_collapsedEnrichments.Top30.pdf"</span><span class="op">)</span>,</span>
+<span>        <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"./enrichments_edgeR/"</span>, <span class="va">comp</span>, <span class="st">"_collapsedEnrichments.Top30.pdf"</span><span class="op">)</span>,</span>
 <span>            width <span class="op">=</span> <span class="fl">6</span>, height <span class="op">=</span> <span class="fl">8</span></span>
 <span>        <span class="op">)</span></span>
 <span>        <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">dotplot</span><span class="op">(</span><span class="va">enr</span>, showCategory <span class="op">=</span> <span class="fl">30</span>, font.size <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="op">+</span> <span class="va">my_theme</span><span class="op">)</span></span>
@@ -358,7 +343,7 @@ cluster.</p>
 <span>        <span class="co"># Collapse similar terms, score by term size, uniqueness, or significance</span></span>
 <span>        <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">enr.up</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>            <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">enr.up</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">2</span><span class="op">)</span> <span class="op">{</span></span>
-<span>                <span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"enrichments"</span>, <span class="st">"reduced"</span><span class="op">)</span>,</span>
+<span>                <span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"enrichments_edgeR"</span>, <span class="st">"reduced"</span><span class="op">)</span>,</span>
 <span>                    recursive <span class="op">=</span> <span class="cn">TRUE</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>                <span class="op">)</span></span>
 <span></span>
@@ -393,7 +378,7 @@ cluster.</p>
 <span></span>
 <span>                <span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.table</a></span><span class="op">(</span><span class="va">enr.up.red.size</span>,</span>
 <span>                    file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
-<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="st">"./enrichments_edgeR/reduced"</span>,</span>
 <span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".termsim.Reduced.size.0.7.txt"</span><span class="op">)</span></span>
 <span>                    <span class="op">)</span>,</span>
 <span>                    sep <span class="op">=</span> <span class="st">"\t"</span>,</span>
@@ -402,7 +387,7 @@ cluster.</p>
 <span></span>
 <span>                <span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.table</a></span><span class="op">(</span><span class="va">enr.up.red.unique</span>,</span>
 <span>                    file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
-<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="st">"./enrichments_edgeR/reduced"</span>,</span>
 <span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".termsim.Reduced.uniqueness.0.7.txt"</span><span class="op">)</span></span>
 <span>                    <span class="op">)</span>,</span>
 <span>                    sep <span class="op">=</span> <span class="st">"\t"</span>,</span>
@@ -411,7 +396,7 @@ cluster.</p>
 <span></span>
 <span>                <span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.table</a></span><span class="op">(</span><span class="va">enr.up.red.score</span>,</span>
 <span>                    file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
-<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="st">"./enrichments_edgeR/reduced"</span>,</span>
 <span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".termsim.Reduced.log10_padjscore.0.7.txt"</span><span class="op">)</span></span>
 <span>                    <span class="op">)</span>,</span>
 <span>                    sep <span class="op">=</span> <span class="st">"\t"</span>,</span>
@@ -420,7 +405,7 @@ cluster.</p>
 <span></span>
 <span>                <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span></span>
 <span>                    <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
-<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="st">"./enrichments_edgeR/reduced"</span>,</span>
 <span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".barplot.termsim.Reduced.size.0.7.pdf"</span><span class="op">)</span></span>
 <span>                    <span class="op">)</span>,</span>
 <span>                    width <span class="op">=</span> <span class="fl">5</span>, height <span class="op">=</span> <span class="fl">6</span></span>
@@ -442,7 +427,7 @@ cluster.</p>
 <span></span>
 <span>                <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span></span>
 <span>                    <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
-<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="st">"./enrichments_edgeR/reduced"</span>,</span>
 <span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".barplot.termsim.Reduced.uniqueness.0.7.pdf"</span><span class="op">)</span></span>
 <span>                    <span class="op">)</span>,</span>
 <span>                    width <span class="op">=</span> <span class="fl">5</span>, height <span class="op">=</span> <span class="fl">6</span></span>
@@ -464,7 +449,7 @@ cluster.</p>
 <span></span>
 <span>                <span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span></span>
 <span>                    <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
-<span>                        <span class="st">"./enrichments/reduced"</span>,</span>
+<span>                        <span class="st">"./enrichments_edgeR/reduced"</span>,</span>
 <span>                        <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span>, <span class="st">".barplot.termsim.Reduced.log10padj_scores.0.7.pdf"</span><span class="op">)</span></span>
 <span>                    <span class="op">)</span>,</span>
 <span>                    width <span class="op">=</span> <span class="fl">5</span>, height <span class="op">=</span> <span class="fl">6</span></span>
@@ -489,7 +474,7 @@ cluster.</p>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="co"># Again, tack onto SE</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span><span class="op">$</span><span class="va">DESeq2.clustered_GO_enrichment</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/S4Vectors/man/Annotated-class.html" class="external-link">metadata</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span><span class="op">$</span><span class="va">edgeR.clustered_GO_enrichment</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    size <span class="op">=</span> <span class="va">clustered_res_size</span>,</span>
 <span>    uniqueness <span class="op">=</span> <span class="va">clustered_res_uniqueness</span>,</span>
 <span>    log10_padjscore <span class="op">=</span> <span class="va">clustered_res_log10_padjscore</span></span>
@@ -564,8 +549,8 @@ members.</p>
 </h3>
 <p>GSEA requires a ranked list of genes, so we will use the test
 statistic, as it is signed and correlates with both significance and
-effect size. Some people use shrunken log2 fold changes for DESeq2
-result, but the test statistic feels more flexible.</p>
+effect size. The edgeR authors recommend using the p-value for
+ranking.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Add as many comparisons as wanted here.</span></span>
 <span><span class="co"># Should match values in `names(dds.meta$DE.Results)`.</span></span>
@@ -574,7 +559,7 @@ result, but the test statistic feels more flexible.</p>
 <span><span class="va">ranked_lists</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">d</span> <span class="kw">in</span> <span class="va">dges</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">out.res</span> <span class="op">&lt;-</span> <span class="va">dds.meta</span><span class="op">$</span><span class="va">DESeq2.Results</span><span class="op">[[</span><span class="va">d</span><span class="op">]</span><span class="op">]</span></span>
+<span>    <span class="va">out.res</span> <span class="op">&lt;-</span> <span class="va">dds.meta</span><span class="op">$</span><span class="va">edgeR.Results</span><span class="op">[[</span><span class="va">d</span><span class="op">]</span><span class="op">]</span></span>
 <span>    <span class="va">gsea.df</span> <span class="op">&lt;-</span> <span class="va">out.res</span><span class="op">[</span><span class="op">!</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">out.res</span><span class="op">$</span><span class="va">padj</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span></span>
 <span></span>
 <span>    <span class="va">gsea.df.gsea</span> <span class="op">&lt;-</span> <span class="va">gsea.df</span><span class="op">$</span><span class="va">stat</span></span>
@@ -713,13 +698,13 @@ Click to expand
 <span><span class="co">## other attached packages:</span></span>
 <span><span class="co">##  [1] rrvgo_1.20.0                BiocParallel_1.42.0        </span></span>
 <span><span class="co">##  [3] msigdbr_10.0.2              openxlsx_4.2.8             </span></span>
-<span><span class="co">##  [5] pins_1.4.1                  DESeq2_1.48.0              </span></span>
-<span><span class="co">##  [7] SummarizedExperiment_1.38.1 Biobase_2.68.0             </span></span>
-<span><span class="co">##  [9] MatrixGenerics_1.20.0       matrixStats_1.5.0          </span></span>
-<span><span class="co">## [11] GenomicRanges_1.60.0        GenomeInfoDb_1.44.0        </span></span>
-<span><span class="co">## [13] IRanges_2.42.0              S4Vectors_0.46.0           </span></span>
-<span><span class="co">## [15] BiocGenerics_0.54.0         generics_0.1.3             </span></span>
-<span><span class="co">## [17] halfBaked_0.99.0.9000       BiocStyle_2.36.0           </span></span>
+<span><span class="co">##  [5] pins_1.4.1                  SummarizedExperiment_1.38.1</span></span>
+<span><span class="co">##  [7] Biobase_2.68.0              GenomicRanges_1.60.0       </span></span>
+<span><span class="co">##  [9] GenomeInfoDb_1.44.0         IRanges_2.42.0             </span></span>
+<span><span class="co">## [11] S4Vectors_0.46.0            BiocGenerics_0.54.0        </span></span>
+<span><span class="co">## [13] generics_0.1.3              MatrixGenerics_1.20.0      </span></span>
+<span><span class="co">## [15] matrixStats_1.5.0           halfBaked_0.99.0.9000      </span></span>
+<span><span class="co">## [17] BiocStyle_2.36.0           </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## loaded via a namespace (and not attached):</span></span>
 <span><span class="co">##   [1] splines_4.5.0               later_1.4.2                </span></span>
@@ -755,49 +740,50 @@ Click to expand
 <span><span class="co">##  [61] treeio_1.32.0               ragg_1.4.0                 </span></span>
 <span><span class="co">##  [63] Rcpp_1.0.14                 glue_1.8.0                 </span></span>
 <span><span class="co">##  [65] gridExtra_2.3               SparseArray_1.8.0          </span></span>
-<span><span class="co">##  [67] xfun_0.52                   qvalue_2.40.0              </span></span>
-<span><span class="co">##  [69] dplyr_1.1.4                 withr_3.0.2                </span></span>
-<span><span class="co">##  [71] BiocManager_1.30.25         fastmap_1.2.0              </span></span>
-<span><span class="co">##  [73] openssl_2.3.2               digest_0.6.37              </span></span>
-<span><span class="co">##  [75] R6_2.6.1                    mime_0.13                  </span></span>
-<span><span class="co">##  [77] gridGraphics_0.5-1          textshaping_1.0.0          </span></span>
-<span><span class="co">##  [79] colorspace_2.1-1            GO.db_3.21.0               </span></span>
-<span><span class="co">##  [81] RSQLite_2.3.9               R.methodsS3_1.8.2          </span></span>
-<span><span class="co">##  [83] tidyr_1.3.1                 data.table_1.17.0          </span></span>
-<span><span class="co">##  [85] graphlayouts_1.2.2          httr_1.4.7                 </span></span>
-<span><span class="co">##  [87] S4Arrays_1.8.0              graphite_1.54.0            </span></span>
-<span><span class="co">##  [89] pkgconfig_2.0.3             gtable_0.3.6               </span></span>
-<span><span class="co">##  [91] blob_1.2.4                  SingleCellExperiment_1.30.0</span></span>
-<span><span class="co">##  [93] XVector_0.48.0              clusterProfiler_4.16.0     </span></span>
-<span><span class="co">##  [95] janeaustenr_1.0.0           htmltools_0.5.8.1          </span></span>
-<span><span class="co">##  [97] bookdown_0.43               fgsea_1.34.0               </span></span>
-<span><span class="co">##  [99] scales_1.4.0                png_0.1-8                  </span></span>
-<span><span class="co">## [101] wordcloud_2.6               ggfun_0.1.8                </span></span>
-<span><span class="co">## [103] knitr_1.50                  reshape2_1.4.4             </span></span>
-<span><span class="co">## [105] curl_6.2.2                  nlme_3.1-168               </span></span>
-<span><span class="co">## [107] cachem_1.1.0                stringr_1.5.1              </span></span>
-<span><span class="co">## [109] parallel_4.5.0              AnnotationDbi_1.70.0       </span></span>
-<span><span class="co">## [111] treemap_2.4-4               desc_1.4.3                 </span></span>
-<span><span class="co">## [113] ReactomePA_1.52.0           pillar_1.10.2              </span></span>
-<span><span class="co">## [115] grid_4.5.0                  vctrs_0.6.5                </span></span>
-<span><span class="co">## [117] slam_0.1-55                 promises_1.3.2             </span></span>
-<span><span class="co">## [119] dittoSeq_1.20.0             xtable_1.8-4               </span></span>
-<span><span class="co">## [121] evaluate_1.0.3              cli_3.6.5                  </span></span>
-<span><span class="co">## [123] locfit_1.5-9.12             compiler_4.5.0             </span></span>
-<span><span class="co">## [125] rlang_1.1.6                 crayon_1.5.3               </span></span>
-<span><span class="co">## [127] tidytext_0.4.2              plyr_1.8.9                 </span></span>
-<span><span class="co">## [129] fs_1.6.6                    stringi_1.8.7              </span></span>
-<span><span class="co">## [131] gridBase_0.4-7              viridisLite_0.4.2          </span></span>
-<span><span class="co">## [133] assertthat_0.2.1            babelgene_22.9             </span></span>
-<span><span class="co">## [135] Biostrings_2.76.0           lazyeval_0.2.2             </span></span>
-<span><span class="co">## [137] GOSemSim_2.34.0             Matrix_1.7-3               </span></span>
-<span><span class="co">## [139] patchwork_1.3.0             bit64_4.6.0-1              </span></span>
-<span><span class="co">## [141] ggplot2_3.5.2               KEGGREST_1.48.0            </span></span>
-<span><span class="co">## [143] statmod_1.5.0               shiny_1.10.0               </span></span>
-<span><span class="co">## [145] igraph_2.1.4                memoise_2.0.1              </span></span>
-<span><span class="co">## [147] bslib_0.9.0                 ggtree_3.16.0              </span></span>
-<span><span class="co">## [149] fastmatch_1.1-6             bit_4.6.0                  </span></span>
-<span><span class="co">## [151] ape_5.8-1                   gson_0.1.0</span></span></code></pre>
+<span><span class="co">##  [67] xfun_0.52                   DESeq2_1.48.0              </span></span>
+<span><span class="co">##  [69] qvalue_2.40.0               dplyr_1.1.4                </span></span>
+<span><span class="co">##  [71] withr_3.0.2                 BiocManager_1.30.25        </span></span>
+<span><span class="co">##  [73] fastmap_1.2.0               openssl_2.3.2              </span></span>
+<span><span class="co">##  [75] digest_0.6.37               R6_2.6.1                   </span></span>
+<span><span class="co">##  [77] mime_0.13                   gridGraphics_0.5-1         </span></span>
+<span><span class="co">##  [79] textshaping_1.0.0           colorspace_2.1-1           </span></span>
+<span><span class="co">##  [81] GO.db_3.21.0                RSQLite_2.3.9              </span></span>
+<span><span class="co">##  [83] R.methodsS3_1.8.2           tidyr_1.3.1                </span></span>
+<span><span class="co">##  [85] data.table_1.17.0           graphlayouts_1.2.2         </span></span>
+<span><span class="co">##  [87] httr_1.4.7                  S4Arrays_1.8.0             </span></span>
+<span><span class="co">##  [89] graphite_1.54.0             pkgconfig_2.0.3            </span></span>
+<span><span class="co">##  [91] gtable_0.3.6                blob_1.2.4                 </span></span>
+<span><span class="co">##  [93] SingleCellExperiment_1.30.0 XVector_0.48.0             </span></span>
+<span><span class="co">##  [95] clusterProfiler_4.16.0      janeaustenr_1.0.0          </span></span>
+<span><span class="co">##  [97] htmltools_0.5.8.1           bookdown_0.43              </span></span>
+<span><span class="co">##  [99] fgsea_1.34.0                scales_1.4.0               </span></span>
+<span><span class="co">## [101] png_0.1-8                   wordcloud_2.6              </span></span>
+<span><span class="co">## [103] ggfun_0.1.8                 knitr_1.50                 </span></span>
+<span><span class="co">## [105] reshape2_1.4.4              curl_6.2.2                 </span></span>
+<span><span class="co">## [107] nlme_3.1-168                cachem_1.1.0               </span></span>
+<span><span class="co">## [109] stringr_1.5.1               parallel_4.5.0             </span></span>
+<span><span class="co">## [111] AnnotationDbi_1.70.0        treemap_2.4-4              </span></span>
+<span><span class="co">## [113] desc_1.4.3                  ReactomePA_1.52.0          </span></span>
+<span><span class="co">## [115] pillar_1.10.2               grid_4.5.0                 </span></span>
+<span><span class="co">## [117] vctrs_0.6.5                 slam_0.1-55                </span></span>
+<span><span class="co">## [119] promises_1.3.2              dittoSeq_1.20.0            </span></span>
+<span><span class="co">## [121] xtable_1.8-4                evaluate_1.0.3             </span></span>
+<span><span class="co">## [123] cli_3.6.5                   locfit_1.5-9.12            </span></span>
+<span><span class="co">## [125] compiler_4.5.0              rlang_1.1.6                </span></span>
+<span><span class="co">## [127] crayon_1.5.3                tidytext_0.4.2             </span></span>
+<span><span class="co">## [129] plyr_1.8.9                  fs_1.6.6                   </span></span>
+<span><span class="co">## [131] stringi_1.8.7               gridBase_0.4-7             </span></span>
+<span><span class="co">## [133] viridisLite_0.4.2           assertthat_0.2.1           </span></span>
+<span><span class="co">## [135] babelgene_22.9              Biostrings_2.76.0          </span></span>
+<span><span class="co">## [137] lazyeval_0.2.2              GOSemSim_2.34.0            </span></span>
+<span><span class="co">## [139] Matrix_1.7-3                patchwork_1.3.0            </span></span>
+<span><span class="co">## [141] bit64_4.6.0-1               ggplot2_3.5.2              </span></span>
+<span><span class="co">## [143] KEGGREST_1.48.0             statmod_1.5.0              </span></span>
+<span><span class="co">## [145] shiny_1.10.0                igraph_2.1.4               </span></span>
+<span><span class="co">## [147] memoise_2.0.1               bslib_0.9.0                </span></span>
+<span><span class="co">## [149] ggtree_3.16.0               fastmatch_1.1-6            </span></span>
+<span><span class="co">## [151] bit_4.6.0                   ape_5.8-1                  </span></span>
+<span><span class="co">## [153] gson_0.1.0</span></span></code></pre>
 </details>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
