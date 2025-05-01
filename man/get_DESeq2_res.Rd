@@ -20,7 +20,7 @@ get_DESeq2_res(
 )
 }
 \arguments{
-\item{dds}{A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment::SummarizedExperiment}  or \link[DESeq2:DESeqDataSet]{DESeq2::DESeqDataSet} object.}
+\item{dds}{A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment::SummarizedExperiment} or \link[DESeq2:DESeqDataSet]{DESeq2::DESeqDataSet} object.}
 
 \item{contrasts}{A named list of contrasts, e.g. \code{list("condition" = c("condition", "A", "B"))}.
 The first element is the variable of interest, the second is the test, and the third is the reference level.
@@ -61,7 +61,7 @@ Defaults to NULL.}
 }
 \value{
 A named list of \link[DESeq2:DESeqResults]{DESeq2::DESeqResults} objects for the specified contrasts.
-If \code{add.rowData} is supplied, these will be returned as \link[S4Vectors:DFrame]{S4Vectors::DFrame} objects instead.
+If \code{add.rowData} is supplied, these will be returned as \link[S4Vectors:DataFrame-class]{S4Vectors::DFrame} objects instead.
 }
 \description{
 This function obtains a set of comparisons from a DESeq2 analysis, given a named list of contrasts.

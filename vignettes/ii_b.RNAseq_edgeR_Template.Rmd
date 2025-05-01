@@ -37,8 +37,8 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center", message = FALSE, warnin
 # Introduction
 
 This is an example template for running a typical differential expression analysis using 
-[DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html) via [halfBaked](https://j-andrews7.github.io/halfBaked/).
-It is meant to be a starting point for your own analysis and is not a comprehensive guide to all the options available in DESeq2 or halfBaked.
+[edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html) via [halfBaked](https://j-andrews7.github.io/halfBaked/).
+It is meant to be a starting point for your own analysis and is not a comprehensive guide to all the options available in edgeR or halfBaked.
 
 # Load the Pin (or SummarizedExperiment)
 
@@ -49,7 +49,6 @@ If you already have a `SummarizedExperiment` object, you can skip this step and 
 
 ```{r, message=FALSE}
 library(halfBaked)
-library(DESeq2)
 library(SummarizedExperiment)
 library(pins)
 library(openxlsx)
@@ -71,16 +70,11 @@ If stored in the `SummarizedExperiment`, we can show the experiment description 
 cat(metadata(se)$description)
 ```
 
-# Run Differential Expression via DESeq2
+# Run Differential Expression via edgeR
 
-See `halfBaked::get_DESEQ2_res()` for more details on the parameters.
+See `halfBaked::get_edgeR_res()` for more details on the parameters.
 
 ```{r, eval = FALSE}
-# Design is just being set to no design here (~ 1).
-# The function will take care of setting this.
-dds <- DESeqDataSet(se, design = ~1)
-dds <- DESeq(dds)
-
 # To hold the results for each comparison.
 res <- list()
 
@@ -89,19 +83,18 @@ contrasts <- list(
     "Eed_cKO.v.Control" = c("Group", "Eed_cKO", "Control")
 )
 
-res <- get_DESeq2_res(dds,
+res <- get_edgeR_res(dds,
     res.list = res, contrasts = contrasts,
-    add.rowData = c("ENSEMBL", "SYMBOL")
 )
 
 # Cram DE results into SE metadata.
 se.meta <- metadata(se)
-se.meta$DESeq2.Results <- res
+se.meta$edgeR.Results <- res
 metadata(se) <- se.meta
 
 # Save all results to file if wanted.
 dir.create("./de", showWarnings = FALSE)
-write.xlsx(res, file = "./de/All.Comparisons.DEGs.DESeq2.xlsx", overwrite = TRUE)
+write.xlsx(res, file = "./de/All.Comparisons.DEGs.edgeR.xlsx", overwrite = TRUE)
 ```
 
 # Enrichment/Over-representation Analyses
@@ -124,36 +117,28 @@ if (params$species %in% c("human", "mouse")) {
     stop("species parameter must be 'human' or 'mouse'")
 }
 
-# Edit if you'd like
+# Edit if you'd like, don't recommend post-hoc LFC thresholding
 sig_th <- 0.05
 lfc_th <- 0
-sig_col <- "padj"
-lfc_col <- "log2FoldChange"
+sig_col <- "FDR"
+lfc_col <- "logFC"
 
 kegg_res <- list()
 rct_res <- list()
 go_res <- list()
 
 for (rez in names(res)) {
-    df <- res[[rez]]
-
-    curr_lfc_th <- lfc_th
-
-    # Handle instances where shrunken LFCs are lower than the LFC testing threshold.
-    # An annoying quirk of DESeq2 LFC shrinkage, just as stupid as it looks.
-    if (grepl("-shLFC0|-LFC0", rez)) {
-        curr_lfc_th <- as.numeric(unlist(strsplit(rez, "LFC"))[2])
-    }
+    df <- res[[rez]]$table
 
     bg <- df$ENSEMBL[!is.na(df[[sig_col]])]
 
     up_genes <- df$ENSEMBL[!is.na(df[[sig_col]]) &
         df[[sig_col]] < sig_th &
-        df[[lfc_col]] > curr_lfc_th]
+        df[[lfc_col]] > lfc_th]
 
     dn_genes <- df$ENSEMBL[!is.na(df[[sig_col]]) &
         df[[sig_col]] < sig_th &
-        df[[lfc_col]] < -curr_lfc_th]
+        df[[lfc_col]] < -lfc_th]
 
     if (length(up_genes) > 0) {
         kegg_res <- run_enrichment(up_genes, bg,
@@ -204,7 +189,7 @@ full_res <- c(kegg_res, rct_res, go_res)
 Individual files are for the birds.
 
 ```{r, eval = FALSE}
-dir.create("./enrichments", showWarnings = FALSE)
+dir.create("./enrichments_edgeR", showWarnings = FALSE)
 
 # Excel sheets can only be 31 characters, so it is necessary to shorten the names
 names(full_res) <- gsub("Reactome", "RCT", names(full_res))
@@ -214,7 +199,7 @@ names(full_res) <- gsub("\\.v\\.", "v", names(full_res))
 write.xlsx(full_res, file = "./enrichments/allresults.xlsx", overwrite = TRUE)
 
 # Save to SE object.
-metadata(se)$DESeq2.enrichments <- full_res
+metadata(se)$edgeR.enrichments <- full_res
 ```
 
 
@@ -234,7 +219,7 @@ for (comp in names(full_res)) {
     enr <- full_res[[comp]]
     message(comp)
 
-    pdf(paste0("enrichments/", comp, "_Enrichments.Top30.pdf"),
+    pdf(paste0("./enrichments_edgeR/", comp, "_Enrichments.Top30.pdf"),
         width = 6, height = 8
     )
     print(dotplot(enr, showCategory = 30, font.size = 7) + my_theme)
@@ -247,7 +232,7 @@ for (comp in names(full_res)) {
     if (grepl("GO", comp)) {
         enr <- simplify(enr)
 
-        pdf(paste0("enrichments/", comp, "_collapsedEnrichments.Top30.pdf"),
+        pdf(paste0("./enrichments_edgeR/", comp, "_collapsedEnrichments.Top30.pdf"),
             width = 6, height = 8
         )
         print(dotplot(enr, showCategory = 30, font.size = 7) + my_theme)
@@ -309,7 +294,7 @@ for (ont in onts) {
         # Collapse similar terms, score by term size, uniqueness, or significance
         if (!is.null(enr.up)) {
             if (nrow(enr.up) > 2) {
-                dir.create(file.path("enrichments", "reduced"),
+                dir.create(file.path("enrichments_edgeR", "reduced"),
                     recursive = TRUE, showWarnings = FALSE
                 )
 
@@ -344,7 +329,7 @@ for (ont in onts) {
 
                 write.table(enr.up.red.size,
                     file = file.path(
-                        "./enrichments/reduced",
+                        "./enrichments_edgeR/reduced",
                         paste0(i, ".termsim.Reduced.size.0.7.txt")
                     ),
                     sep = "\t",
@@ -353,7 +338,7 @@ for (ont in onts) {
 
                 write.table(enr.up.red.unique,
                     file = file.path(
-                        "./enrichments/reduced",
+                        "./enrichments_edgeR/reduced",
                         paste0(i, ".termsim.Reduced.uniqueness.0.7.txt")
                     ),
                     sep = "\t",
@@ -362,7 +347,7 @@ for (ont in onts) {
 
                 write.table(enr.up.red.score,
                     file = file.path(
-                        "./enrichments/reduced",
+                        "./enrichments_edgeR/reduced",
                         paste0(i, ".termsim.Reduced.log10_padjscore.0.7.txt")
                     ),
                     sep = "\t",
@@ -371,7 +356,7 @@ for (ont in onts) {
 
                 pdf(
                     file.path(
-                        "./enrichments/reduced",
+                        "./enrichments_edgeR/reduced",
                         paste0(i, ".barplot.termsim.Reduced.size.0.7.pdf")
                     ),
                     width = 5, height = 6
@@ -393,7 +378,7 @@ for (ont in onts) {
 
                 pdf(
                     file.path(
-                        "./enrichments/reduced",
+                        "./enrichments_edgeR/reduced",
                         paste0(i, ".barplot.termsim.Reduced.uniqueness.0.7.pdf")
                     ),
                     width = 5, height = 6
@@ -415,7 +400,7 @@ for (ont in onts) {
 
                 pdf(
                     file.path(
-                        "./enrichments/reduced",
+                        "./enrichments_edgeR/reduced",
                         paste0(i, ".barplot.termsim.Reduced.log10padj_scores.0.7.pdf")
                     ),
                     width = 5, height = 6
@@ -440,7 +425,7 @@ for (ont in onts) {
 }
 
 # Again, tack onto SE
-metadata(se)$DESeq2.clustered_GO_enrichment <- list(
+metadata(se)$edgeR.clustered_GO_enrichment <- list(
     size = clustered_res_size,
     uniqueness = clustered_res_uniqueness,
     log10_padjscore = clustered_res_log10_padjscore
@@ -513,7 +498,7 @@ for (i in seq_along(cats)) {
 ## Create Ranked Gene Lists
 
 GSEA requires a ranked list of genes, so we will use the test statistic, as it is signed and correlates with both significance and effect size. 
-Some people use shrunken log2 fold changes for DESeq2 result, but the test statistic feels more flexible.
+The edgeR authors recommend using the p-value for ranking.
 
 ```{r, eval = FALSE}
 # Add as many comparisons as wanted here.
@@ -523,7 +508,7 @@ dges <- c("Eed_cKO.v.Control")
 ranked_lists <- list()
 
 for (d in dges) {
-    out.res <- dds.meta$DESeq2.Results[[d]]
+    out.res <- dds.meta$edgeR.Results[[d]]
     gsea.df <- out.res[!(is.na(out.res$padj)), ]
 
     gsea.df.gsea <- gsea.df$stat

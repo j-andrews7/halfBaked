@@ -2,11 +2,13 @@
 
 export(GSEA_barplot)
 export(get_DESeq2_res)
+export(get_edgeR_res)
 export(get_genes_by_go_term)
 export(plot_clustered_terms_top)
 export(run_GSEA)
 export(run_enrichment)
 import(DESeq2)
+import(edgeR)
 importFrom(ReactomePA,enrichPathway)
 importFrom(SummarizedExperiment,rowData)
 importFrom(clusterProfiler,bitr)
