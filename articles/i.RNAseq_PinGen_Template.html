@@ -37,7 +37,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/i.RNAseq_PinGen_Template.html">halfBaked - RNA-seq - Pin Generation Template</a></li>
     <li><a class="dropdown-item" href="../articles/ii_a.RNAseq_DESeq2_Template.html">halfBaked - RNA-seq - DESeq2 Differential Expression</a></li>
-    <li><a class="dropdown-item" href="../articles/ii_b.RNAseq_edgeR_Template.html">halfBaked - RNA-seq - DESeq2 Differential Expression</a></li>
+    <li><a class="dropdown-item" href="../articles/ii_b.RNAseq_edgeR_Template.html">halfBaked - RNA-seq - edgeR Differential Expression</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -68,7 +68,7 @@ Andrews</h4>
 Hospital<br><a class="author_email" href="mailto:#"></a><a href="mailto:jared.andrews07@gmail.com" class="email">jared.andrews07@gmail.com</a>
       </address>
                   
-            <h4 data-toc-skip class="date">2025-05-01</h4>
+            <h4 data-toc-skip class="date">2025-05-02</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/j-andrews7/halfBaked/blob/devel/vignettes/i.RNAseq_PinGen_Template.Rmd" class="external-link"><code>vignettes/i.RNAseq_PinGen_Template.Rmd</code></a></small>
       <div class="d-none name"><code>i.RNAseq_PinGen_Template.Rmd</code></div>
@@ -144,6 +144,17 @@ you don’t know what a “board” is or how to use them.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/thelovelab/DESeq2" class="external-link">DESeq2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bioinf.wehi.edu.au/edgeR/" class="external-link">edgeR</a></span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># For gene ID mapping</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">organism</span> <span class="op">==</span> <span class="st">"mouse"</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">org.Mm.eg.db</span><span class="op">)</span></span>
+<span>    <span class="va">org.db</span> <span class="op">&lt;-</span> <span class="va">org.Mm.eg.db</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">organism</span> <span class="op">==</span> <span class="st">"human"</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">org.Hs.eg.db</span><span class="op">)</span></span>
+<span>    <span class="va">org.db</span> <span class="op">&lt;-</span> <span class="va">org.Hs.eg.db</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Organism not supported."</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
 <span><span class="co"># Load sample metadata.</span></span>
 <span><span class="va">meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"nfcore_rnaseq.samplesheet.csv"</span>, header <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>                 stringsAsFactors <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -162,6 +173,16 @@ you don’t know what a “board” is or how to use them.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">genes</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ENSEMBL"</span>, <span class="st">"SYMBOL"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">cts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">cts</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span></span>
 <span></span>
+<span><span class="co"># Remove the gene version info from the ENSEMBL IDs</span></span>
+<span><span class="va">genes</span><span class="op">$</span><span class="va">ENSEMBL</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"\\..*"</span>, <span class="st">""</span>, <span class="va">genes</span><span class="op">$</span><span class="va">ENSEMBL</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 2) Using mapIds() to get a named vector of ENTREZ IDs</span></span>
+<span><span class="va">genes</span><span class="op">$</span><span class="va">ENTREZ</span> <span class="op">&lt;-</span> <span class="fu">mapIds</span><span class="op">(</span><span class="va">org.db</span>,</span>
+<span>                     keys<span class="op">=</span><span class="va">genes</span><span class="op">$</span><span class="va">ENSEMBL</span>,</span>
+<span>                     column<span class="op">=</span><span class="st">"ENTREZID"</span>,</span>
+<span>                     keytype<span class="op">=</span><span class="st">"ENSEMBL"</span>,</span>
+<span>                     multiVals<span class="op">=</span><span class="st">"first"</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># Set metadata rownames and ensure they match count column names.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">meta</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">meta</span><span class="op">$</span><span class="va">sample</span></span>
 <span></span>
@@ -175,7 +196,7 @@ you don’t know what a “board” is or how to use them.</p>
 <span></span>
 <span><span class="co"># Create a SummarizedExperiment object.</span></span>
 <span><span class="va">se</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">SummarizedExperiment</a></span><span class="op">(</span></span>
-<span>    assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">cts</span><span class="op">)</span>,</span>
+<span>    assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">cts</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>                  tpm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">tpms</span><span class="op">)</span>,</span>
 <span>                  log2tpm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">tpms</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    colData <span class="op">=</span> <span class="va">meta</span>,</span>
@@ -188,7 +209,7 @@ you don’t know what a “board” is or how to use them.</p>
 <span><span class="va">se</span> <span class="op">&lt;-</span> <span class="va">se</span><span class="op">[</span><span class="va">keep</span>, <span class="op">]</span></span>
 <span></span>
 <span><span class="co"># Add various normalized counts</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">se</span>, <span class="st">"vst"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DESeq2/man/vst.html" class="external-link">vst</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">se</span>, <span class="st">"counts"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">se</span>, <span class="st">"vst"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DESeq2/man/vst.html" class="external-link">vst</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">se</span>, <span class="st">"counts"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">se</span>, <span class="st">"cpm"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/edgeR/man/cpm.html" class="external-link">cpm</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">se</span>, <span class="st">"log2cpm"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/edgeR/man/cpm.html" class="external-link">cpm</a></span><span class="op">(</span><span class="va">se</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -241,7 +262,7 @@ you don’t know what a “board” is or how to use them.</p>
 <span><span class="co">##  [4] bookdown_0.43       fastmap_1.2.0       xfun_0.52          </span></span>
 <span><span class="co">##  [7] cachem_1.1.0        knitr_1.50          htmltools_0.5.8.1  </span></span>
 <span><span class="co">## [10] rmarkdown_2.29      lifecycle_1.0.4     cli_3.6.5          </span></span>
-<span><span class="co">## [13] pkgdown_2.1.2       sass_0.4.10         textshaping_1.0.0  </span></span>
+<span><span class="co">## [13] pkgdown_2.1.2       sass_0.4.10         textshaping_1.0.1  </span></span>
 <span><span class="co">## [16] jquerylib_0.1.4     systemfonts_1.2.3   compiler_4.5.0     </span></span>
 <span><span class="co">## [19] tools_4.5.0         ragg_1.4.0          evaluate_1.0.3     </span></span>
 <span><span class="co">## [22] bslib_0.9.0         yaml_2.3.10         BiocManager_1.30.25</span></span>
