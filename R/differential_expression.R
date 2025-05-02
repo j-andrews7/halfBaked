@@ -201,13 +201,16 @@ get_DESeq2_res <- function(
 #' @param contrasts A named list of contrasts, e.g. `list("condition_AvB" = c("condition", "A", "B"))`.
 #'   The first element is the variable of interest, the second is the test, and the third is the reference level.
 #'   The name of  each element in the list will be used as a name in the results table.
-#' @param res.list A named list to hold edgeR result.
+#' @param design The design matrix, as output from `model.matrix()`.
+#'   If not provided, the function will create a design matrix based on the contrasts and `block` (if provided).
+#' @param res.list A named list to hold edgeR results.
 #'   Allows the function to be run multiple times if needed and append to the same list.
 #'   Defaults to an empty list.
 #' @param block A vector of additional terms to be considered in the model, beyond the main effect.
-#'   Defaults to NULL.
-#' @param lfc.th A numeric vector of log2 fold-change thresholds.
-#'   Defaults to `c(log2(1.25), log2(1.5))`.
+#'   Defaults to `NULL`.
+#' @param lfc.th A numeric vector of log2 fold-change thresholds for testing.
+#'   The function will run `glmTreat()` for each threshold specified.
+#'   Defaults to `NULL`.
 #' @param norm.ercc A logical indicating whether to normalize to ERCC spike-ins.
 #' @param ercc.pattern A character string indicating the pattern to match ERCC spike-ins.
 #'   Defaults to `^ERCC-`.
@@ -217,6 +220,7 @@ get_DESeq2_res <- function(
 #' @return A named list of [edgeR::TopTags-class] objects for the specified contrasts.
 #'
 #' @import edgeR
+#' @importFrom limma makeContrasts
 #' @importFrom stats as.formula relevel
 #' @export
 #'
@@ -241,12 +245,18 @@ get_DESeq2_res <- function(
 get_edgeR_res <- function(
     se,
     contrasts,
+    design = NULL,
     res.list = list(),
     block = NULL,
-    lfc.th = c(log2(1.25), log2(1.5)),
+    lfc.th = NULL,
     norm.ercc = FALSE,
     ercc.pattern = "^ERCC-",
     use.lrt = FALSE) {
+
+    # Check that first element of each contrast is the same.
+    if (length(unique(vapply(contrasts, function(x) x[1], character(1)))) != 1) {
+        stop("All contrasts must have the same first element, run multiple times if variable of interest is different.")
+    }
 
     # Convert to DGEList if SummarizedExperiment object is provided.
     if (is(se, "SummarizedExperiment")) {
@@ -271,49 +281,55 @@ get_edgeR_res <- function(
         norm.factors <- norm.factors / prod(norm.factors)^(1 / length(norm.factors))
         se$samples$norm.factors <- norm.factors
     } else {
-        se <- calcNormFactors(se)
+        se <- normLibSizes(se)
     }
 
-    for (i in seq_along(contrasts)) {
-        rname <- names(contrasts)[i]
+    # Make the design matrix if not provided.
+    if (is.null(design)) {
+        int_var <- contrasts[[1]][1]
 
-        con <- contrasts[[i]]
-        coef <- paste0(con[1], con[2])
+        desgn <- as.formula(paste0("~0+", paste0(c(int_var, block), collapse = "+")))
+        message("Design: ", as.character(desgn))
+        mm <- model.matrix(desgn, data = se$samples)
+    } else {
+        mm <- design
+    }
 
-        se$samples[[con[1]]] <- relevel(se$samples[[con[1]]], ref = con[3])
+    # Make all contrasts.
+    cnts <- unlist(lapply(seq_along(contrasts), function(x) {
+        el <- contrasts[[x]]
+        paste0(el[[1]], el[[2]], "-", el[[1]], el[[3]])
+    }))
 
-        if (!is.null(block)) {
-            desgn <- as.formula(paste0("~", paste0(c(block, con[1]), collapse = "+")))
-            mm <- model.matrix(desgn, data = se$samples)
-        } else {
-            desgn <- as.formula(paste0("~", con[1]))
-            mm <- model.matrix(desgn, data = se$samples)
-        }
+    cnts <- makeContrasts(contrasts = cnts, levels = mm)
+    colnames(cnts) <- names(contrasts)
 
-        message(paste0(
-            "\nDesign for ", paste(con[1], con[2], "vs", con[3], sep = "_"),
-            " is ", paste0(as.character(desgn), collapse = "")
-        ))
+    se <- estimateDisp(se, design = mm)
 
-        se <- estimateDisp(se, design = mm)
+    if (use.lrt) {
+        message("Using likelihood ratio test (LRT) instead of quasi-likelihood F-test.")
+        se_fit <- glmFit(se, design = mm)
+    } else {
+        se_fit <- glmQLFit(se, design = mm)
+    }
+
+    # Calculate results for each contrast.
+    for (i in seq_along(ncol(cnts))) {
+        rname <- colnames(cnts)[i]
 
         if (use.lrt) {
-            message("Using likelihood ratio test (LRT) instead of quasi-likelihood F-test.")
-            se_fit <- glmFit(se, design = mm)
-            res <- glmLRT(se_fit, coef = coef)
+            res <- glmLRT(se_fit, contrast = cnts[, i])
         } else {
-            se_fit <- glmQLFit(se, design = mm)
-            res <- glmQLFTest(se_fit, coef = coef)
+            res <- glmQLFTest(se_fit, contrast = cnts[, i])
         }
 
-        # Add results to list.
         res <- topTags(res, n = Inf)
 
         res.list[[rname]] <- res
 
         for (l in lfc.th) {
             message(paste0("Calculating results for LFC threshold ", round(l, 3), " using glmTreat."))
-            res <- glmTreat(se_fit, coef = coef, lfc = l)
+            res <- glmTreat(se_fit, contrast = cnts, lfc = l)
             res <- topTags(res, n = Inf)
 
             out.name <- paste0(rname, "-LFC", round(l, 3))

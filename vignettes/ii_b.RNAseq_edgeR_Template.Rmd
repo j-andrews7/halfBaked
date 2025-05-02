@@ -1,5 +1,5 @@
 ---
-title: "halfBaked - RNA-seq - DESeq2 Differential Expression"
+title: "halfBaked - RNA-seq - edgeR Differential Expression"
 author: 
   - name: Jared Andrews
     affiliation:
@@ -15,7 +15,7 @@ output:
 date: "`r doc_date()`"
 package: "`r pkg_ver('halfBaked')`"
 vignette: >
-  %\VignetteIndexEntry{halfBaked RNA-seq Template}
+  %\VignetteIndexEntry{halfBaked edgeR RNA-seq Template}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}  
 params:
@@ -83,7 +83,7 @@ contrasts <- list(
     "Eed_cKO.v.Control" = c("Group", "Eed_cKO", "Control")
 )
 
-res <- get_edgeR_res(dds,
+res <- get_edgeR_res(se,
     res.list = res, contrasts = contrasts,
 )
 
@@ -186,7 +186,7 @@ full_res <- c(kegg_res, rct_res, go_res)
 
 ## Create Summary Table
 
-Individual files are for the birds.
+Individual files are for the birds, I hate making supplemental tables.
 
 ```{r, eval = FALSE}
 dir.create("./enrichments_edgeR", showWarnings = FALSE)

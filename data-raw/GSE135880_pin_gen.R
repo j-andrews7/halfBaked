@@ -6,11 +6,14 @@ library(pins)
 library(msigdbr)
 library(BiocParallel)
 library(rrvgo)
+library(org.Mm.eg.db)
 
 # Original FASTQs were downloaded from GEO and processed with the nf-core v3.12.0 pipeline:
 # nextflow run nf-core/rnaseq -r 3.12.0 -profile singularity -c "$BAKER_REF"/nf_configs/rnaseq.config -w /scratch_space/jandrews/"$LSB_JOBNAME" \
 # --outdir ./nfcore_mm10 --email jared.andrews@stjude.org --input nfcore_rnaseq.samplesheet.csv --gencode --genome MM10 --aligner star_salmon \
 # --pseudo_aligner salmon --max_memory 128.GB --skip_stringtie --max_multiqc_email_size 15.MB -resume
+
+org.db <- org.Mm.eg.db
 
 description <- "
   **Wang J. et al SciAdv 2020 - GSE135880 - Mouse OPCs with _Eed_ KO - RNA-seq Data**
@@ -28,10 +31,10 @@ meta <- read.csv("nfcore_rnaseq.samplesheet.csv", header = TRUE,
 # Drop FASTQ file locations.
 meta <- meta[, !colnames(meta) %in% c("fastq_1", "fastq_2")]
 
-# Load counts. This object was generated using tximport via the nf-core 
+# Load counts. This object was generated using tximport via the nf-core
 # RNA-seq pipeline on the salmon quants and
 # is appropriate for pretty much all downstream DE packages (DESeq2, edgeR, limma).
-cts <- read.table("salmon.merged.gene_counts_length_scaled.tsv", header = TRUE, 
+cts <- read.table("salmon.merged.gene_counts_length_scaled.tsv", header = TRUE,
                   sep = "\t", stringsAsFactors = FALSE)
 
 # Counts table has first two columns as gene IDs and gene symbols.
@@ -39,11 +42,21 @@ genes <- cts[, 1:2]
 names(genes) <- c("ENSEMBL", "SYMBOL")
 rownames(cts) <- cts[, 1]
 
+# Remove the gene version info from the ENSEMBL IDs
+genes$ENSEMBL <- gsub("\\..*", "", genes$ENSEMBL)
+
+# 2) Using mapIds() to get a named vector of ENTREZ IDs
+genes$ENTREZ <- mapIds(org.db,
+                       keys=genes$ENSEMBL,
+                       column="ENTREZID",
+                       keytype="ENSEMBL",
+                       multiVals="first")
+
 # Set metadata rownames and ensure they match count column names.
 rownames(meta) <- meta$sample
 
 # Also carry along TPMs as an additional assay.
-tpms <- read.table("salmon.merged.gene_tpm.tsv", header = TRUE, 
+tpms <- read.table("salmon.merged.gene_tpm.tsv", header = TRUE,
                    sep = "\t", stringsAsFactors = FALSE)
 rownames(tpms) <- tpms[, 1]
 tpms <- tpms[, rownames(meta)]
@@ -63,11 +76,6 @@ se <- SummarizedExperiment(
 design <- model.matrix(~0 + Group, data = colData(se))
 keep <- filterByExpr(se, design = design)
 se <- se[keep, ]
-
-# Add various normalized counts
-assay(se, "vst") <- vst(assay(se, "counts"))
-assay(se, "cpm") <- cpm(se)
-assay(se, "log2cpm") <- cpm(se, log = TRUE)
 
 # Add experiment data to metadata.
 metadata(se) <- list(description = description)
@@ -91,6 +99,11 @@ res <- get_DESeq2_res(dds,
     res.list = res, contrasts = contrasts,
     add.rowData = c("ENSEMBL", "SYMBOL")
 )
+
+# Add various normalized counts
+assay(se, "vst") <- vst(round(assay(se, "counts")))
+assay(se, "cpm") <- cpm(se)
+assay(se, "log2cpm") <- cpm(se, log = TRUE)
 
 # Cram DE results into SE metadata.
 se.meta <- metadata(se)
@@ -347,6 +360,18 @@ names(res_list) <- gsub("REACTOME", "RCT", names(res_list))
 
 # Add to metadata of the SummarizedExperiment object
 metadata(se)$DESeq2.GSEA <- res_list
+
+###### edgeR ######
+res <- list()
+
+res <- get_edgeR_res(se,
+                     res.list = res, contrasts = contrasts,
+)
+
+# Cram DE results into SE metadata.
+se.meta <- metadata(se)
+se.meta$edgeR.Results <- res
+metadata(se) <- se.meta
 
 # Write to pin.
 board <- board_folder("../pkgdown/assets/pins-board")

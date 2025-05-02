@@ -15,7 +15,7 @@ output:
 date: "`r doc_date()`"
 package: "`r pkg_ver('halfBaked')`"
 vignette: >
-  %\VignetteIndexEntry{halfBaked RNA-seq Template}
+  %\VignetteIndexEntry{halfBaked DESeq2 RNA-seq Template}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}  
 params:
@@ -201,7 +201,7 @@ full_res <- c(kegg_res, rct_res, go_res)
 
 ## Create Summary Table
 
-Individual files are for the birds.
+Individual files are for the birds, I hate making supplemental tables.
 
 ```{r, eval = FALSE}
 dir.create("./enrichments", showWarnings = FALSE)

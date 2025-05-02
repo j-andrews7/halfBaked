@@ -7,9 +7,10 @@
 get_edgeR_res(
   se,
   contrasts,
+  design = NULL,
   res.list = list(),
   block = NULL,
-  lfc.th = c(log2(1.25), log2(1.5)),
+  lfc.th = NULL,
   norm.ercc = FALSE,
   ercc.pattern = "^ERCC-",
   use.lrt = FALSE
@@ -22,15 +23,19 @@ get_edgeR_res(
 The first element is the variable of interest, the second is the test, and the third is the reference level.
 The name of  each element in the list will be used as a name in the results table.}
 
-\item{res.list}{A named list to hold edgeR result.
+\item{design}{The design matrix, as output from \code{model.matrix()}.
+If not provided, the function will create a design matrix based on the contrasts and \code{block} (if provided).}
+
+\item{res.list}{A named list to hold edgeR results.
 Allows the function to be run multiple times if needed and append to the same list.
 Defaults to an empty list.}
 
 \item{block}{A vector of additional terms to be considered in the model, beyond the main effect.
-Defaults to NULL.}
+Defaults to \code{NULL}.}
 
-\item{lfc.th}{A numeric vector of log2 fold-change thresholds.
-Defaults to \code{c(log2(1.25), log2(1.5))}.}
+\item{lfc.th}{A numeric vector of log2 fold-change thresholds for testing.
+The function will run \code{glmTreat()} for each threshold specified.
+Defaults to \code{NULL}.}
 
 \item{norm.ercc}{A logical indicating whether to normalize to ERCC spike-ins.}
 

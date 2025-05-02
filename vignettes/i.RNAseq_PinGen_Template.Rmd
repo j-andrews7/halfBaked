@@ -21,6 +21,7 @@ params:
   board: "https://j-andrews7.github.io/halfBaked/pins-board/"
   pin_name: "GSE135880_SummarizedExperiment_mm10"
   pin_description: "A SummarizedExperiment containing O4+ immunopanned oligodendrocyte precursor cells (OPCs) from cortices of P5 or P6 Eed KO or control mice."
+  organism: "mouse"
 ---
 
 ```{r setup, echo=FALSE, include=FALSE}
@@ -93,6 +94,17 @@ library(pins)
 library(DESeq2)
 library(edgeR)
 
+# For gene ID mapping
+if (params$organism == "mouse") {
+    library(org.Mm.eg.db)
+    org.db <- org.Mm.eg.db
+} else if (params$organism == "human") {
+    library(org.Hs.eg.db)
+    org.db <- org.Hs.eg.db
+} else {
+    stop("Organism not supported.")
+}
+
 # Load sample metadata.
 meta <- read.csv("nfcore_rnaseq.samplesheet.csv", header = TRUE,
                  stringsAsFactors = TRUE)
@@ -111,6 +123,16 @@ genes <- cts[, 1:2]
 names(genes) <- c("ENSEMBL", "SYMBOL")
 rownames(cts) <- cts[, 1]
 
+# Remove the gene version info from the ENSEMBL IDs
+genes$ENSEMBL <- gsub("\\..*", "", genes$ENSEMBL)
+
+# 2) Using mapIds() to get a named vector of ENTREZ IDs
+genes$ENTREZ <- mapIds(org.db,
+                     keys=genes$ENSEMBL,
+                     column="ENTREZID",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+
 # Set metadata rownames and ensure they match count column names.
 rownames(meta) <- meta$sample
 
@@ -124,7 +146,7 @@ cts <- cts[, rownames(meta)]
 
 # Create a SummarizedExperiment object.
 se <- SummarizedExperiment(
-    assays = list(counts = as.matrix(cts),
+    assays = list(counts = round(as.matrix(cts)),
                   tpm = as.matrix(tpms),
                   log2tpm = log2(as.matrix(tpms) + 1)),
     colData = meta,
@@ -137,7 +159,7 @@ keep <- filterByExpr(se, design = design)
 se <- se[keep, ]
 
 # Add various normalized counts
-assay(se, "vst") <- vst(round(assay(se, "counts")))
+assay(se, "vst") <- vst(assay(se, "counts"))
 assay(se, "cpm") <- cpm(se)
 assay(se, "log2cpm") <- cpm(se, log = TRUE)
 ```
