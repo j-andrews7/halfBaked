@@ -68,7 +68,7 @@ Andrews</h4>
 Hospital<br><a class="author_email" href="mailto:#"></a><a href="mailto:jared.andrews07@gmail.com" class="email">jared.andrews07@gmail.com</a>
       </address>
                   
-            <h4 data-toc-skip class="date">2025-05-02</h4>
+            <h4 data-toc-skip class="date">2025-05-05</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/j-andrews7/halfBaked/blob/devel/vignettes/i.RNAseq_PinGen_Template.Rmd" class="external-link"><code>vignettes/i.RNAseq_PinGen_Template.Rmd</code></a></small>
       <div class="d-none name"><code>i.RNAseq_PinGen_Template.Rmd</code></div>
@@ -145,10 +145,10 @@ you don’t know what a “board” is or how to use them.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bioinf.wehi.edu.au/edgeR/" class="external-link">edgeR</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># For gene ID mapping</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">organism</span> <span class="op">==</span> <span class="st">"mouse"</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">species</span> <span class="op">==</span> <span class="st">"mouse"</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">org.Mm.eg.db</span><span class="op">)</span></span>
 <span>    <span class="va">org.db</span> <span class="op">&lt;-</span> <span class="va">org.Mm.eg.db</span></span>
-<span><span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">organism</span> <span class="op">==</span> <span class="st">"human"</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">species</span> <span class="op">==</span> <span class="st">"human"</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">org.Hs.eg.db</span><span class="op">)</span></span>
 <span>    <span class="va">org.db</span> <span class="op">&lt;-</span> <span class="va">org.Hs.eg.db</span></span>
 <span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
