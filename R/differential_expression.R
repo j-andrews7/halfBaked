@@ -314,7 +314,7 @@ get_edgeR_res <- function(
     }
 
     # Calculate results for each contrast.
-    for (i in seq_along(ncol(cnts))) {
+    for (i in seq(ncol(cnts))) {
         rname <- colnames(cnts)[i]
 
         if (use.lrt) {

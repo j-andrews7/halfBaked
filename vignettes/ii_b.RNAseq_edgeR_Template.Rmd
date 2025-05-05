@@ -196,7 +196,7 @@ names(full_res) <- gsub("Reactome", "RCT", names(full_res))
 names(full_res) <- gsub("Control", "Ctl", names(full_res))
 names(full_res) <- gsub("\\.v\\.", "v", names(full_res))
 
-write.xlsx(full_res, file = "./enrichments/allresults.xlsx", overwrite = TRUE)
+write.xlsx(full_res, file = "./enrichments_edgeR/allresults.xlsx", overwrite = TRUE)
 
 # Save to SE object.
 metadata(se)$edgeR.enrichments <- full_res
@@ -622,7 +622,7 @@ pin_write(board, se,
 )
 
 # Can save the object locally if wanted as well.
-saveRDS(se, file = paste0("./", params$pin_name, ".RDS"))
+saveRDS(se, file = "./se.RDS")
 ```
 
 # SessionInfo
