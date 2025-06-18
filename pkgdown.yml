@@ -1,12 +1,12 @@
 pandoc: 3.1.11
-pkgdown: 2.1.2
+pkgdown: 2.1.3
 pkgdown_sha: ~
 articles:
   halfBaked: halfBaked.html
   i.RNAseq_PinGen_Template: i.RNAseq_PinGen_Template.html
   ii_a.RNAseq_DESeq2_Template: ii_a.RNAseq_DESeq2_Template.html
   ii_b.RNAseq_edgeR_Template: ii_b.RNAseq_edgeR_Template.html
-last_built: 2025-05-05T22:08Z
+last_built: 2025-06-18T22:12Z
 urls:
   reference: https://j-andrews7.github.io/halfBaked/reference
   article: https://j-andrews7.github.io/halfBaked/articles

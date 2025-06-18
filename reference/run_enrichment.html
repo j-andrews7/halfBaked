@@ -58,12 +58,7 @@ It accepts a set of genes and background genes for enrichment.</p>
 <span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"KEGG"</span>, <span class="st">"Reactome"</span>, <span class="st">"GO"</span>, <span class="st">"universal"</span><span class="op">)</span>,</span>
 <span>  species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"human"</span>, <span class="st">"mouse"</span><span class="op">)</span>,</span>
 <span>  ont <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"BP"</span>, <span class="st">"MF"</span>, <span class="st">"CC"</span>, <span class="st">"ALL"</span><span class="op">)</span>,</span>
-<span>  sig.th <span class="op">=</span> <span class="fl">0.05</span>,</span>
-<span>  sig.col <span class="op">=</span> <span class="st">"padj"</span>,</span>
-<span>  lfc.th <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  lfc.col <span class="op">=</span> <span class="st">"log2FoldChange"</span>,</span>
 <span>  OrgDb <span class="op">=</span> <span class="st">"org.Hs.eg.db"</span>,</span>
-<span>  id.col <span class="op">=</span> <span class="st">"ENSEMBL"</span>,</span>
 <span>  id.type <span class="op">=</span> <span class="st">"ENSEMBL"</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -112,32 +107,8 @@ This determines the organism values for KEGG and Reactome.</p></dd>
 Default is <code>c("BP", "MF", "CC", "ALL")</code>.</p></dd>
 
 
-<dt id="arg-sig-th">sig.th<a class="anchor" aria-label="anchor" href="#arg-sig-th"></a></dt>
-<dd><p>Significance threshold for DE genes.
-Default is 0.05.</p></dd>
-
-
-<dt id="arg-sig-col">sig.col<a class="anchor" aria-label="anchor" href="#arg-sig-col"></a></dt>
-<dd><p>Name of the column in the results data.frame containing significance values to use.
-Default is "padj".</p></dd>
-
-
-<dt id="arg-lfc-th">lfc.th<a class="anchor" aria-label="anchor" href="#arg-lfc-th"></a></dt>
-<dd><p>Log fold change threshold for DE genes.
-Default is 0.</p></dd>
-
-
-<dt id="arg-lfc-col">lfc.col<a class="anchor" aria-label="anchor" href="#arg-lfc-col"></a></dt>
-<dd><p>Name of the column in the results data.frame containing log2 fold change values.
-Default is "log2FoldChange".</p></dd>
-
-
 <dt id="arg-orgdb">OrgDb<a class="anchor" aria-label="anchor" href="#arg-orgdb"></a></dt>
 <dd><p>Annotation database to use (default: "org.Hs.eg.db").</p></dd>
-
-
-<dt id="arg-id-col">id.col<a class="anchor" aria-label="anchor" href="#arg-id-col"></a></dt>
-<dd><p>Name of gene ID column (default: "ENSEMBL").</p></dd>
 
 
 <dt id="arg-id-type">id.type<a class="anchor" aria-label="anchor" href="#arg-id-type"></a></dt>
@@ -146,10 +117,6 @@ Default is "log2FoldChange".</p></dd>
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments passed to the enrichment functions.</p></dd>
-
-
-<dt id="arg-outdir">outdir<a class="anchor" aria-label="anchor" href="#arg-outdir"></a></dt>
-<dd><p>Output directory (default: "./enrichments").</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -174,7 +141,7 @@ Default is "log2FoldChange".</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>
