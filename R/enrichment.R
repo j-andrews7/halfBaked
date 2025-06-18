@@ -21,17 +21,7 @@
 #'   This determines the organism values for KEGG and Reactome.
 #' @param ont Character vector of GO ontologies to test, options include "BP", "MF", "CC", and "ALL".
 #'   Default is `c("BP", "MF", "CC", "ALL")`.
-#' @param sig.th Significance threshold for DE genes.
-#'   Default is 0.05.
-#' @param sig.col Name of the column in the results data.frame containing significance values to use.
-#'   Default is "padj".
-#' @param lfc.th Log fold change threshold for DE genes.
-#'   Default is 0.
-#' @param lfc.col Name of the column in the results data.frame containing log2 fold change values.
-#'   Default is "log2FoldChange".
-#' @param outdir Output directory (default: "./enrichments").
 #' @param OrgDb Annotation database to use (default: "org.Hs.eg.db").
-#' @param id.col Name of gene ID column (default: "ENSEMBL").
 #' @param id.type Type of gene ID used (default: "ENSEMBL").
 #' @param ... Additional arguments passed to the enrichment functions.
 #' @return Named list of enrichment results.
@@ -54,12 +44,7 @@ run_enrichment <- function(
     method = c("KEGG", "Reactome", "GO", "universal"),
     species = c("human", "mouse"),
     ont = c("BP", "MF", "CC", "ALL"),
-    sig.th = 0.05,
-    sig.col = "padj",
-    lfc.th = 0,
-    lfc.col = "log2FoldChange",
     OrgDb = "org.Hs.eg.db",
-    id.col = "ENSEMBL",
     id.type = "ENSEMBL",
     ...) {
     species <- match.arg(species)

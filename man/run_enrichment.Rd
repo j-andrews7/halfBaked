@@ -13,12 +13,7 @@ run_enrichment(
   method = c("KEGG", "Reactome", "GO", "universal"),
   species = c("human", "mouse"),
   ont = c("BP", "MF", "CC", "ALL"),
-  sig.th = 0.05,
-  sig.col = "padj",
-  lfc.th = 0,
-  lfc.col = "log2FoldChange",
   OrgDb = "org.Hs.eg.db",
-  id.col = "ENSEMBL",
   id.type = "ENSEMBL",
   ...
 )
@@ -47,27 +42,11 @@ This determines the organism values for KEGG and Reactome.}
 \item{ont}{Character vector of GO ontologies to test, options include "BP", "MF", "CC", and "ALL".
 Default is \code{c("BP", "MF", "CC", "ALL")}.}
 
-\item{sig.th}{Significance threshold for DE genes.
-Default is 0.05.}
-
-\item{sig.col}{Name of the column in the results data.frame containing significance values to use.
-Default is "padj".}
-
-\item{lfc.th}{Log fold change threshold for DE genes.
-Default is 0.}
-
-\item{lfc.col}{Name of the column in the results data.frame containing log2 fold change values.
-Default is "log2FoldChange".}
-
 \item{OrgDb}{Annotation database to use (default: "org.Hs.eg.db").}
-
-\item{id.col}{Name of gene ID column (default: "ENSEMBL").}
 
 \item{id.type}{Type of gene ID used (default: "ENSEMBL").}
 
 \item{...}{Additional arguments passed to the enrichment functions.}
-
-\item{outdir}{Output directory (default: "./enrichments").}
 }
 \value{
 Named list of enrichment results.
